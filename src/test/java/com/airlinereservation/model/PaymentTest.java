@@ -5,6 +5,7 @@ import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.exception.PaymentException;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.payment.CardPayment;
+import com.airlinereservation.payment.CashPayment;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -79,5 +80,19 @@ class PaymentTest {
         assertEquals(LocalDateTime.ofInstant(FIXED_INSTANT, ZONE), completed.getPaidAt());
         assertThrows(PaymentException.class, completed::refund);
         assertEquals(PaymentStatus.REFUNDED, completed.getStatus());
+    }
+
+    @Test
+    void rejectsMismatchedConcreteStrategyWithoutMutatingPendingStateAndAllowsMatchingRetry() {
+        Payment cashPayment = new Payment("PAY-20", 750_000.0, PaymentMethod.CASH, FIXED_CLOCK);
+
+        assertThrows(ValidationException.class,
+                () -> cashPayment.processPayment(new CardPayment("4111-2222-3333-4444", "Nguyen Van A")));
+        assertEquals(PaymentStatus.PENDING, cashPayment.getStatus());
+        assertNull(cashPayment.getPaidAt());
+
+        assertTrue(cashPayment.processPayment(new CashPayment("CNT-01", "ST-01")));
+        assertEquals(PaymentStatus.COMPLETED, cashPayment.getStatus());
+        assertEquals(LocalDateTime.ofInstant(FIXED_INSTANT, ZONE), cashPayment.getPaidAt());
     }
 }

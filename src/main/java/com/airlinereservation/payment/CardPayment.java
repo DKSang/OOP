@@ -1,5 +1,6 @@
 package com.airlinereservation.payment;
 
+import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.ValidationException;
 
 /**
@@ -21,6 +22,11 @@ public class CardPayment implements PaymentStrategy {
 
     public String getCardHolderName() {
         return cardHolderName;
+    }
+
+    @Override
+    public PaymentMethod getPaymentMethod() {
+        return PaymentMethod.CREDIT_DEBIT_CARD;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.airlinereservation.payment;
 
+import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.ValidationException;
 
 /**
@@ -21,6 +22,11 @@ public class BankTransferPayment implements PaymentStrategy {
 
     public String getAccountNumber() {
         return accountNumber;
+    }
+
+    @Override
+    public PaymentMethod getPaymentMethod() {
+        return PaymentMethod.BANK_TRANSFER;
     }
 
     @Override

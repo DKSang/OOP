@@ -54,7 +54,7 @@ public class Payment {
     }
 
     public boolean processPayment(PaymentStrategy strategy) {
-        ValidationException.requireNonNull(strategy, "Payment strategy");
+        PaymentStrategy.requireSupports(strategy, method);
         if (status != PaymentStatus.PENDING) {
             throw new PaymentException("Cannot process payment " + paymentId + " in status: " + status);
         }

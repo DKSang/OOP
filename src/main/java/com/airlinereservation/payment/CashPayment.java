@@ -1,5 +1,6 @@
 package com.airlinereservation.payment;
 
+import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.ValidationException;
 
 /**
@@ -21,6 +22,11 @@ public class CashPayment implements PaymentStrategy {
 
     public String getCashierId() {
         return cashierId;
+    }
+
+    @Override
+    public PaymentMethod getPaymentMethod() {
+        return PaymentMethod.CASH;
     }
 
     @Override

@@ -9,6 +9,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,5 +71,33 @@ class PaymentStrategyTest {
         assertThrows(ValidationException.class, () -> new BankTransferPayment("VCB", null));
         assertThrows(ValidationException.class, () -> new CashPayment(null, "ST-01"));
         assertThrows(ValidationException.class, () -> new CashPayment("C-01", " "));
+    }
+
+    @Test
+    void declaresDeclaredPaymentMethodsAndSupportsCompatibilityChecks() {
+        PaymentStrategy lambdaStrategy = amount -> true;
+        assertNull(lambdaStrategy.getPaymentMethod());
+        for (PaymentMethod method : PaymentMethod.values()) {
+            assertTrue(lambdaStrategy.supports(method));
+        }
+        assertFalse(lambdaStrategy.supports(null));
+
+        CardPayment card = new CardPayment("4111-1111-1111-1111", "Nguyen Van A");
+        EWalletPayment wallet = new EWalletPayment("W-001", "MoMo");
+        BankTransferPayment transfer = new BankTransferPayment("Vietcombank", "0123456789");
+        CashPayment cash = new CashPayment("CNT-01", "ST-09");
+
+        assertDeclaredMethodSupport(card, PaymentMethod.CREDIT_DEBIT_CARD);
+        assertDeclaredMethodSupport(wallet, PaymentMethod.E_WALLET);
+        assertDeclaredMethodSupport(transfer, PaymentMethod.BANK_TRANSFER);
+        assertDeclaredMethodSupport(cash, PaymentMethod.CASH);
+    }
+
+    private static void assertDeclaredMethodSupport(PaymentStrategy strategy, PaymentMethod expectedMethod) {
+        assertEquals(expectedMethod, strategy.getPaymentMethod());
+        assertFalse(strategy.supports(null));
+        for (PaymentMethod candidate : PaymentMethod.values()) {
+            assertEquals(candidate == expectedMethod, strategy.supports(candidate));
+        }
     }
 }

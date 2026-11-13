@@ -15,6 +15,7 @@ import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Passenger;
 import com.airlinereservation.model.Payment;
 import com.airlinereservation.model.Seat;
+import com.airlinereservation.payment.PaymentFactory;
 import com.airlinereservation.payment.PaymentStrategy;
 
 import java.time.Clock;
@@ -192,9 +193,19 @@ public class AirlineReservationSystem {
         return executeBookingPayment(booking, method, strategy);
     }
 
+    public Payment processPayment(String bookingId, PaymentStrategy strategy) {
+        Booking booking = findBookingById(bookingId);
+        return executeBookingPayment(booking, resolveDeclaredPaymentMethod(strategy), strategy);
+    }
+
     public Payment processPayment(Booking booking, PaymentMethod method, PaymentStrategy strategy) {
         requireRegisteredBooking(booking);
         return executeBookingPayment(booking, method, strategy);
+    }
+
+    public Payment processPayment(Booking booking, PaymentStrategy strategy) {
+        requireRegisteredBooking(booking);
+        return executeBookingPayment(booking, resolveDeclaredPaymentMethod(strategy), strategy);
     }
 
     /**
@@ -248,15 +259,24 @@ public class AirlineReservationSystem {
 
     private Payment executeBookingPayment(Booking booking, PaymentMethod method, PaymentStrategy strategy) {
         ValidationException.requireNonNull(method, "Payment method");
-        ValidationException.requireNonNull(strategy, "Payment strategy");
+        PaymentStrategy.requireSupports(strategy, method);
         booking.validateConfirmable();
 
         String paymentId = "PAY-" + (++paymentSequence);
-        Payment payment = new Payment(paymentId, booking.getTotalPrice(), method, clock);
+        Payment payment = PaymentFactory.createPayment(paymentId, booking.getTotalPrice(), method, clock);
         if (payment.processPayment(strategy)) {
             booking.confirmBooking(payment);
         }
         return payment;
+    }
+
+    private static PaymentMethod resolveDeclaredPaymentMethod(PaymentStrategy strategy) {
+        ValidationException.requireNonNull(strategy, "Payment strategy");
+        PaymentMethod declared = strategy.getPaymentMethod();
+        if (declared == null) {
+            throw new ValidationException("Payment strategy must declare a payment method when method is omitted");
+        }
+        return declared;
     }
 
     private Booking createValidatedBooking(Passenger passenger, Flight flight, List<Seat> seats) {

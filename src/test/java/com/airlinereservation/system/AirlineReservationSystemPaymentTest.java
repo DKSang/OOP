@@ -19,6 +19,8 @@ import com.airlinereservation.payment.BankTransferPayment;
 import com.airlinereservation.payment.CardPayment;
 import com.airlinereservation.payment.CashPayment;
 import com.airlinereservation.payment.EWalletPayment;
+import com.airlinereservation.payment.PaymentFactory;
+import com.airlinereservation.payment.PaymentStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -235,5 +237,75 @@ class AirlineReservationSystemPaymentTest {
         assertFalse(strategyInvoked.get());
         assertEquals(BookingStatus.PENDING, pendingOnSecondFlight.getStatus());
         assertEquals(SeatStatus.RESERVED, secondFlight.findSeat("1B").getStatus());
+    }
+
+    @Test
+    void rejectsMismatchedMethodAndConcreteStrategyWithoutMutatingBookingSeatsOrPaymentSequence() {
+        Booking booking = system.createBooking("PAX-01", "FL-01", List.of("1A"));
+        Seat seat1A = flight.findSeat("1A");
+
+        assertThrows(ValidationException.class, () -> system.processPayment(
+                booking.getBookingId(),
+                PaymentMethod.CASH,
+                PaymentFactory.createCardPayment("4111-2222-3333-4444", "Nguyen Van A")
+        ));
+        assertThrows(ValidationException.class, () -> system.processPayment(
+                booking,
+                PaymentMethod.E_WALLET,
+                PaymentFactory.createCashPayment("CNT-01", "ST-01")
+        ));
+
+        assertEquals(BookingStatus.PENDING, booking.getStatus());
+        assertNull(booking.getPayment());
+        assertEquals(SeatStatus.RESERVED, seat1A.getStatus());
+
+        Payment validPayment = system.processPayment(
+                booking.getBookingId(),
+                PaymentMethod.CASH,
+                PaymentFactory.createCashPayment("CNT-01", "ST-01")
+        );
+        assertEquals("PAY-1", validPayment.getPaymentId());
+        assertEquals(PaymentStatus.COMPLETED, validPayment.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, booking.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, seat1A.getStatus());
+    }
+
+    @Test
+    void infersPaymentMethodForStrategyOnlyOverloadsAndRejectsGenericLambdas() {
+        Booking cardBooking = system.createBooking("PAX-01", "FL-01", List.of("1A"));
+        Payment cardPayment = system.processPayment(
+                cardBooking.getBookingId(),
+                PaymentFactory.createCardPayment("4111-2222-3333-4444", "Nguyen Van A")
+        );
+        assertEquals(PaymentMethod.CREDIT_DEBIT_CARD, cardPayment.getMethod());
+        assertEquals(PaymentStatus.COMPLETED, cardPayment.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, cardBooking.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight.findSeat("1A").getStatus());
+
+        Booking walletBooking = system.createBooking("PAX-01", "FL-01", List.of("2A"));
+        Payment walletPayment = system.processPayment(
+                walletBooking,
+                PaymentFactory.createEWalletPayment("0901111111", "MoMo")
+        );
+        assertEquals(PaymentMethod.E_WALLET, walletPayment.getMethod());
+        assertEquals(PaymentStatus.COMPLETED, walletPayment.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, walletBooking.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight.findSeat("2A").getStatus());
+
+        Booking pending = system.createBooking("PAX-01", "FL-01", List.of("3A"));
+        assertThrows(ValidationException.class,
+                () -> system.processPayment(pending.getBookingId(), (PaymentStrategy) amount -> true));
+        assertThrows(ValidationException.class,
+                () -> system.processPayment(pending, (PaymentStrategy) amount -> true));
+        assertThrows(ValidationException.class,
+                () -> system.processPayment(pending.getBookingId(), (PaymentStrategy) null));
+        assertThrows(ValidationException.class,
+                () -> system.processPayment(pending, (PaymentStrategy) null));
+        assertThrows(EntityNotFoundException.class,
+                () -> system.processPayment("BK-404", PaymentFactory.createCashPayment("CNT-01", "ST-01")));
+
+        assertEquals(BookingStatus.PENDING, pending.getStatus());
+        assertNull(pending.getPayment());
+        assertEquals(SeatStatus.RESERVED, flight.findSeat("3A").getStatus());
     }
 }

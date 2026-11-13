@@ -1,5 +1,6 @@
 package com.airlinereservation.payment;
 
+import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.ValidationException;
 
 /**
@@ -21,6 +22,11 @@ public class EWalletPayment implements PaymentStrategy {
 
     public String getProvider() {
         return provider;
+    }
+
+    @Override
+    public PaymentMethod getPaymentMethod() {
+        return PaymentMethod.E_WALLET;
     }
 
     @Override
