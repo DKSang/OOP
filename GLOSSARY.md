@@ -30,6 +30,10 @@ _Avoid_: NormalSeat, StandardSeat
 Ghế hạng thương gia trên một `Flight`, áp dụng hệ số nhân (`priceMultiplier`) trên giá cơ sở (`basePrice`) kèm quyền lợi phòng chờ (`hasLoungeAccess`).
 _Avoid_: VIPSeat, FirstClassSeat
 
+**SeatFactory**:
+Bộ khởi tạo chịu trách nhiệm tạo các đối tượng `Seat` (`EconomySeat`, `BusinessSeat`) và dựng sơ đồ ghế mở bán tiêu chuẩn cho từng `Flight` theo sức chứa của `Aircraft`.
+_Avoid_: SeatBuilder, CabinGenerator
+
 ### Người dùng & Đặt chỗ
 
 **Person**:
@@ -48,6 +52,10 @@ _Avoid_: Manager, Staff, Operator
 Một đơn đặt chỗ của `Passenger` cho một `Flight` cụ thể với danh sách `Seat` đã chọn, tổng chi phí (`totalPrice`) và vòng đời trạng thái riêng (`BookingStatus`).
 _Avoid_: Order, Reservation, Ticket
 
+**BookingState**:
+Giao diện đại diện cho một trạng thái cụ thể trong vòng đời của `Booking` (`PendingBookingState`, `ConfirmedBookingState`, `CheckedInBookingState`, `CompletedBookingState`, `CancelledBookingState`), đóng gói các quy tắc chuyển trạng thái hợp lệ và phản ứng trước sự kiện của `Flight`.
+_Avoid_: BookingPhase, ReservationLifecycle
+
 ### Thanh toán & Điều phối
 
 **Payment**:
@@ -57,6 +65,10 @@ _Avoid_: Invoice, Bill, Receipt
 **PaymentStrategy**:
 Giao diện trừu tượng định nghĩa hành vi xử lý thanh toán cho một giao dịch, được hiện thực hóa bởi từng phương thức thanh toán cụ thể (`CardPayment`, `EWalletPayment`, `BankTransferPayment`, `CashPayment`).
 _Avoid_: PaymentProcessor, BillingGateway
+
+**PaymentFactory**:
+Bộ khởi tạo chịu trách nhiệm tạo bản ghi giao dịch `Payment` và đối tượng `PaymentStrategy` tương ứng với `PaymentMethod`, đảm bảo tính nhất quán giữa phương thức khai báo và chiến lược thực thi thanh toán.
+_Avoid_: BillingCreator, TransactionBuilder
 
 **AirlineReservationSystem**:
 Bộ điều phối trung tâm của hệ thống, quản lý danh mục `Flight`, `Aircraft`, `Airport`, `Passenger`, `Booking` và điều phối các luồng nghiệp vụ tìm kiếm chuyến bay, tạo đặt chỗ và hủy đặt chỗ.
