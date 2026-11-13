@@ -7,7 +7,6 @@ import com.airlinereservation.exception.ValidationException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -17,7 +16,6 @@ import java.util.Map;
  */
 public class Flight {
 
-    private static final int COLUMNS_PER_ROW = 4;
     private static final Map<FlightStatus, FlightStatus> NEXT_OPERATIONAL_STATUS = Map.of(
             FlightStatus.SCHEDULED, FlightStatus.BOARDING,
             FlightStatus.BOARDING, FlightStatus.DEPARTED,
@@ -44,7 +42,7 @@ public class Flight {
                   Aircraft aircraft,
                   double basePrice) {
         this(flightId, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime,
-                aircraft, basePrice, defaultBusinessSeatCount(
+                aircraft, basePrice, SeatFactory.defaultBusinessSeatCount(
                         ValidationException.requireNonNull(aircraft, "Aircraft").getCapacity()));
     }
 
@@ -70,13 +68,9 @@ public class Flight {
             throw new ValidationException("Arrival time must be after departure time");
         }
         this.aircraft = ValidationException.requireNonNull(aircraft, "Aircraft");
-        int capacity = this.aircraft.getCapacity();
         this.basePrice = ValidationException.requirePositive(basePrice, "Base price");
-        if (businessSeatCount < 0 || businessSeatCount > capacity) {
-            throw new ValidationException("Business seat count must be between 0 and " + capacity);
-        }
         this.status = FlightStatus.SCHEDULED;
-        this.seats = generateSeatMap(capacity, businessSeatCount);
+        this.seats = SeatFactory.createSeatMap(this.aircraft.getCapacity(), businessSeatCount);
     }
 
     public String getFlightId() {
@@ -115,6 +109,26 @@ public class Flight {
         return status;
     }
 
+    public boolean canAcceptNewBooking() {
+        return status == FlightStatus.SCHEDULED;
+    }
+
+    public boolean isActiveForBooking() {
+        return status == FlightStatus.SCHEDULED || status == FlightStatus.BOARDING;
+    }
+
+    public boolean canCancelBooking() {
+        return status != FlightStatus.DEPARTED && status != FlightStatus.ARRIVED;
+    }
+
+    public boolean hasArrived() {
+        return status == FlightStatus.ARRIVED;
+    }
+
+    public boolean isCancelled() {
+        return status == FlightStatus.CANCELLED;
+    }
+
     public List<Seat> getSeats() {
         return List.copyOf(seats.values());
     }
@@ -147,7 +161,7 @@ public class Flight {
     }
 
     public boolean matches(String depCode, String arrCode, LocalDate date) {
-        if (status != FlightStatus.SCHEDULED || depCode == null || arrCode == null || date == null) {
+        if (!canAcceptNewBooking() || depCode == null || arrCode == null || date == null) {
             return false;
         }
         String normalizedDep = depCode.trim();
@@ -177,24 +191,5 @@ public class Flight {
             throw new InvalidStateException("Cannot cancel flight " + flightId + " in status: " + status);
         }
         this.status = FlightStatus.CANCELLED;
-    }
-
-    private static int defaultBusinessSeatCount(int capacity) {
-        return capacity >= 5 ? (int) Math.ceil(capacity * 0.2) : 0;
-    }
-
-    private static Map<String, Seat> generateSeatMap(int capacity, int businessSeatCount) {
-        Map<String, Seat> seatMap = new LinkedHashMap<>();
-        int firstEconomyRow = (businessSeatCount / COLUMNS_PER_ROW) + 1;
-        for (int index = 0; index < capacity; index++) {
-            int row = (index / COLUMNS_PER_ROW) + 1;
-            char column = (char) ('A' + (index % COLUMNS_PER_ROW));
-            String seatNumber = row + String.valueOf(column);
-            Seat seat = index < businessSeatCount
-                    ? new BusinessSeat(seatNumber)
-                    : new EconomySeat(seatNumber, row == firstEconomyRow);
-            seatMap.put(seatNumber, seat);
-        }
-        return seatMap;
     }
 }

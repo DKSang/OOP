@@ -171,4 +171,59 @@ class FlightTest {
         assertEquals(FlightStatus.CANCELLED, cancellableFromBoarding.getStatus());
         assertThrows(InvalidStateException.class, cancellableFromBoarding::cancel);
     }
+
+    @Test
+    void exposesSemanticOperationalStateQueriesAcrossLifecycle() {
+        Aircraft aircraft = new Aircraft("AC-1", "A321", "Airbus", 4);
+        Flight flight = new Flight("FL-Q1", "VN401", HAN, SGN, DEP_TIME, ARR_TIME, aircraft, 1_000_000);
+
+        // SCHEDULED
+        assertTrue(flight.canAcceptNewBooking());
+        assertTrue(flight.isActiveForBooking());
+        assertTrue(flight.canCancelBooking());
+        assertFalse(flight.hasArrived());
+        assertFalse(flight.isCancelled());
+
+        // BOARDING
+        flight.updateStatus(FlightStatus.BOARDING);
+        assertFalse(flight.canAcceptNewBooking());
+        assertTrue(flight.isActiveForBooking());
+        assertTrue(flight.canCancelBooking());
+        assertFalse(flight.hasArrived());
+        assertFalse(flight.isCancelled());
+
+        // DEPARTED
+        flight.updateStatus(FlightStatus.DEPARTED);
+        assertFalse(flight.canAcceptNewBooking());
+        assertFalse(flight.isActiveForBooking());
+        assertFalse(flight.canCancelBooking());
+        assertFalse(flight.hasArrived());
+        assertFalse(flight.isCancelled());
+
+        // ARRIVED
+        flight.updateStatus(FlightStatus.ARRIVED);
+        assertFalse(flight.canAcceptNewBooking());
+        assertFalse(flight.isActiveForBooking());
+        assertFalse(flight.canCancelBooking());
+        assertTrue(flight.hasArrived());
+        assertFalse(flight.isCancelled());
+
+        // CANCELLED (from SCHEDULED and from BOARDING)
+        Flight cancelledFromScheduled = new Flight("FL-Q2", "VN402", HAN, SGN, DEP_TIME, ARR_TIME, aircraft, 1_000_000);
+        cancelledFromScheduled.cancel();
+        assertFalse(cancelledFromScheduled.canAcceptNewBooking());
+        assertFalse(cancelledFromScheduled.isActiveForBooking());
+        assertTrue(cancelledFromScheduled.canCancelBooking());
+        assertFalse(cancelledFromScheduled.hasArrived());
+        assertTrue(cancelledFromScheduled.isCancelled());
+
+        Flight cancelledFromBoarding = new Flight("FL-Q3", "VN403", HAN, SGN, DEP_TIME, ARR_TIME, aircraft, 1_000_000);
+        cancelledFromBoarding.updateStatus(FlightStatus.BOARDING);
+        cancelledFromBoarding.cancel();
+        assertFalse(cancelledFromBoarding.canAcceptNewBooking());
+        assertFalse(cancelledFromBoarding.isActiveForBooking());
+        assertTrue(cancelledFromBoarding.canCancelBooking());
+        assertFalse(cancelledFromBoarding.hasArrived());
+        assertTrue(cancelledFromBoarding.isCancelled());
+    }
 }
