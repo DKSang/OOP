@@ -1,11 +1,11 @@
 package com.airlinereservation.model;
 
 import com.airlinereservation.enums.BookingStatus;
-import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.enums.SeatStatus;
 import com.airlinereservation.exception.InvalidStateException;
 import com.airlinereservation.exception.PaymentException;
+import com.airlinereservation.exception.SeatNotAvailableException;
 import com.airlinereservation.exception.ValidationException;
 
 import java.time.LocalDateTime;
@@ -26,7 +26,7 @@ public class Booking {
     private final List<Seat> selectedSeats;
     private Payment payment;
     private final double totalPrice;
-    private BookingStatus status;
+    private BookingState state;
     private final LocalDateTime createdAt;
 
     public Booking(String bookingId,
@@ -34,13 +34,67 @@ public class Booking {
                    Passenger passenger,
                    List<Seat> selectedSeats,
                    LocalDateTime createdAt) {
-        this.bookingId = ValidationException.requireNonBlank(bookingId, "Booking ID");
-        this.flight = ValidationException.requireNonNull(flight, "Flight");
-        this.passenger = ValidationException.requireNonNull(passenger, "Passenger");
-        this.selectedSeats = copyValidatedSeats(selectedSeats);
-        this.createdAt = ValidationException.requireNonNull(createdAt, "Created timestamp");
-        this.status = BookingStatus.PENDING;
+        this(
+                ValidationException.requireNonBlank(bookingId, "Booking ID"),
+                ValidationException.requireNonNull(flight, "Flight"),
+                ValidationException.requireNonNull(passenger, "Passenger"),
+                copyValidatedSeats(selectedSeats),
+                ValidationException.requireNonNull(createdAt, "Created timestamp"),
+                PendingBookingState.INSTANCE
+        );
+    }
+
+    private Booking(String bookingId,
+                    Flight flight,
+                    Passenger passenger,
+                    List<Seat> validatedSeats,
+                    LocalDateTime createdAt,
+                    BookingState initialState) {
+        this.bookingId = bookingId;
+        this.flight = flight;
+        this.passenger = passenger;
+        this.selectedSeats = validatedSeats;
+        this.createdAt = createdAt;
+        this.state = initialState;
         this.totalPrice = calculateTotalPrice();
+    }
+
+    /**
+     * Atomically validates flight readiness and seat availability, reserves seats,
+     * creates a pending booking, and records it in the passenger's history.
+     */
+    public static Booking createReserved(String bookingId,
+                                         Flight flight,
+                                         Passenger passenger,
+                                         List<Seat> selectedSeats,
+                                         LocalDateTime createdAt) {
+        String validBookingId = ValidationException.requireNonBlank(bookingId, "Booking ID");
+        Flight validFlight = ValidationException.requireNonNull(flight, "Flight");
+        Passenger validPassenger = ValidationException.requireNonNull(passenger, "Passenger");
+        List<Seat> validatedSeats = copyValidatedSeats(selectedSeats);
+        LocalDateTime validCreatedAt = ValidationException.requireNonNull(createdAt, "Created timestamp");
+
+        if (!validFlight.canAcceptNewBooking()) {
+            throw new InvalidStateException("Cannot create booking for flight " + validFlight.getFlightId()
+                    + " in status: " + validFlight.getStatus());
+        }
+        for (Seat seat : validatedSeats) {
+            if (!validFlight.containsSeat(seat)) {
+                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber()
+                        + " does not belong to flight " + validFlight.getFlightId());
+            }
+            if (!seat.isAvailable()) {
+                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber()
+                        + " is not available (status: " + seat.getStatus() + ")");
+            }
+        }
+        for (Seat seat : validatedSeats) {
+            seat.reserve();
+        }
+        Booking booking = new Booking(
+                validBookingId, validFlight, validPassenger, validatedSeats, validCreatedAt, PendingBookingState.INSTANCE);
+        validPassenger.addBooking(booking);
+        return booking;
     }
 
     public String getBookingId() {
@@ -64,7 +118,7 @@ public class Booking {
     }
 
     public BookingStatus getStatus() {
-        return status;
+        return state.getStatus();
     }
 
     public Payment getPayment() {
@@ -79,21 +133,76 @@ public class Booking {
      * Verifies that the booking, its flight, and all selected seats can transition to CONFIRMED.
      */
     public void validateConfirmable() {
-        if (status != BookingStatus.PENDING) {
-            throw new InvalidStateException("Cannot confirm booking " + bookingId + " in status: " + status);
-        }
-        requireActiveFlight("confirm");
+        state.validateConfirmable(this);
+    }
+
+    public void confirmBooking(Payment payment) {
+        ValidationException.requireNonNull(payment, "Payment");
+        state.confirmBooking(this, payment);
+    }
+
+    /**
+     * Checks in a confirmed booking while its flight is SCHEDULED or BOARDING.
+     */
+    public void checkIn() {
+        state.checkIn(this);
+    }
+
+    /**
+     * Completes a checked-in booking once its flight has arrived.
+     */
+    public void complete() {
+        state.complete(this);
+    }
+
+    /**
+     * Cancels a pending or confirmed booking before departure, releasing seats and refunding payment.
+     */
+    public boolean cancelBooking() {
+        return state.cancelBooking(this);
+    }
+
+    /**
+     * Cancels an unpaid pending booking when its flight arrives, releasing its reserved seats.
+     */
+    public void cancelPendingOnArrival() {
+        state.cancelPendingOnArrival(this);
+    }
+
+    /**
+     * Handles cancellation of the associated flight by cancelling open bookings,
+     * releasing seats, and refunding completed payments.
+     */
+    public void onFlightCancelled() {
+        state.onFlightCancelled(this);
+    }
+
+    /**
+     * Handles arrival of the associated flight, completing checked-in bookings
+     * and expiring unpaid pending bookings while preserving terminal and no-show states.
+     */
+    public void onFlightArrived() {
+        state.onFlightArrived(this);
+    }
+
+    void transitionTo(BookingState nextState) {
+        this.state = nextState;
+    }
+
+    InvalidStateException invalidTransition(String action) {
+        return new InvalidStateException("Cannot " + action + " booking " + bookingId + " in status: " + getStatus());
+    }
+
+    void requireReservedSeats(String action) {
         for (Seat seat : selectedSeats) {
             if (seat.getStatus() != SeatStatus.RESERVED) {
-                throw new InvalidStateException("Cannot confirm booking " + bookingId
+                throw new InvalidStateException("Cannot " + action + " booking " + bookingId
                         + "; seat " + seat.getSeatNumber() + " is in status: " + seat.getStatus());
             }
         }
     }
 
-    public void confirmBooking(Payment payment) {
-        ValidationException.requireNonNull(payment, "Payment");
-        validateConfirmable();
+    void verifyConfirmablePayment(Payment payment) {
         if (payment.getStatus() != PaymentStatus.COMPLETED) {
             throw new PaymentException("Cannot confirm booking " + bookingId
                     + " with payment " + payment.getPaymentId() + " in status: " + payment.getStatus());
@@ -102,70 +211,25 @@ public class Booking {
             throw new PaymentException("Payment amount " + payment.getAmount()
                     + " does not match booking total " + totalPrice);
         }
+    }
+
+    void occupySeats() {
         for (Seat seat : selectedSeats) {
             seat.occupy();
         }
+    }
+
+    void attachPayment(Payment payment) {
         this.payment = payment;
-        this.status = BookingStatus.CONFIRMED;
     }
 
-    /**
-     * Checks in a confirmed booking while its flight is SCHEDULED or BOARDING.
-     */
-    public void checkIn() {
-        if (status != BookingStatus.CONFIRMED) {
-            throw new InvalidStateException("Cannot check in booking " + bookingId + " in status: " + status);
-        }
-        requireActiveFlight("check in");
-        this.status = BookingStatus.CHECKED_IN;
-    }
-
-    /**
-     * Completes a checked-in booking once its flight has arrived.
-     */
-    public void complete() {
-        if (status != BookingStatus.CHECKED_IN) {
-            throw new InvalidStateException("Cannot complete booking " + bookingId + " in status: " + status);
-        }
-        requireArrivedFlight("complete");
-        this.status = BookingStatus.COMPLETED;
-    }
-
-    /**
-     * Cancels a pending or confirmed booking before departure, releasing seats and refunding payment.
-     */
-    public boolean cancelBooking() {
-        if (status != BookingStatus.PENDING && status != BookingStatus.CONFIRMED) {
-            throw new InvalidStateException("Cannot cancel booking " + bookingId + " in status: " + status);
-        }
-        FlightStatus flightStatus = flight.getStatus();
-        if (flightStatus == FlightStatus.DEPARTED || flightStatus == FlightStatus.ARRIVED) {
-            throw new InvalidStateException("Cannot cancel booking " + bookingId
-                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
-        }
-        requireHeldSeats("cancel");
+    void refundPaymentIfPresent() {
         if (payment != null) {
             payment.refund();
         }
-        releaseSeats();
-        this.status = BookingStatus.CANCELLED;
-        return true;
     }
 
-    /**
-     * Cancels an unpaid pending booking when its flight arrives, releasing its reserved seats.
-     */
-    public void cancelPendingOnArrival() {
-        if (status != BookingStatus.PENDING) {
-            throw new InvalidStateException("Cannot expire booking " + bookingId + " in status: " + status);
-        }
-        requireArrivedFlight("expire pending");
-        requireHeldSeats("expire");
-        releaseSeats();
-        this.status = BookingStatus.CANCELLED;
-    }
-
-    private void requireHeldSeats(String action) {
+    void requireHeldSeats(String action) {
         for (Seat seat : selectedSeats) {
             if (seat.isAvailable()) {
                 throw new InvalidStateException("Cannot " + action + " booking " + bookingId
@@ -174,25 +238,49 @@ public class Booking {
         }
     }
 
-    private void releaseSeats() {
+    void releaseSeats() {
         for (Seat seat : selectedSeats) {
             seat.release();
         }
     }
 
-    private void requireArrivedFlight(String action) {
-        FlightStatus flightStatus = flight.getStatus();
-        if (flightStatus != FlightStatus.ARRIVED) {
+    void completeCancellation() {
+        requireHeldSeats("cancel");
+        refundPaymentIfPresent();
+        releaseSeats();
+        transitionTo(CancelledBookingState.INSTANCE);
+    }
+
+    void cancelOnFlightCancellation() {
+        requireCancelledFlight("cancel");
+        completeCancellation();
+    }
+
+    void requireArrivedFlight(String action) {
+        if (!flight.hasArrived()) {
             throw new InvalidStateException("Cannot " + action + " booking " + bookingId
-                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
+                    + " for flight " + flight.getFlightId() + " in status: " + flight.getStatus());
         }
     }
 
-    private void requireActiveFlight(String action) {
-        FlightStatus flightStatus = flight.getStatus();
-        if (flightStatus != FlightStatus.SCHEDULED && flightStatus != FlightStatus.BOARDING) {
+    void requireActiveFlight(String action) {
+        if (!flight.isActiveForBooking()) {
             throw new InvalidStateException("Cannot " + action + " booking " + bookingId
-                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
+                    + " for flight " + flight.getFlightId() + " in status: " + flight.getStatus());
+        }
+    }
+
+    void requireCancellableFlight(String action) {
+        if (!flight.canCancelBooking()) {
+            throw new InvalidStateException("Cannot " + action + " booking " + bookingId
+                    + " for flight " + flight.getFlightId() + " in status: " + flight.getStatus());
+        }
+    }
+
+    void requireCancelledFlight(String action) {
+        if (!flight.isCancelled()) {
+            throw new InvalidStateException("Cannot " + action + " booking " + bookingId
+                    + " because flight " + flight.getFlightId() + " is in status: " + flight.getStatus());
         }
     }
 

@@ -1,12 +1,9 @@
 package com.airlinereservation.system;
 
-import com.airlinereservation.enums.BookingStatus;
 import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.DuplicateEntityException;
 import com.airlinereservation.exception.EntityNotFoundException;
-import com.airlinereservation.exception.InvalidStateException;
-import com.airlinereservation.exception.SeatNotAvailableException;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.model.Aircraft;
 import com.airlinereservation.model.Airport;
@@ -167,7 +164,6 @@ public class AirlineReservationSystem {
     public Booking createBooking(String passengerId, String flightId, List<String> seatNumbers) {
         Passenger passenger = findPassengerById(passengerId);
         Flight flight = findFlightById(flightId);
-        requireScheduledFlight(flight);
         List<Seat> seats = resolveSeatNumbers(flight, seatNumbers);
         return createValidatedBooking(passenger, flight, seats);
     }
@@ -175,9 +171,7 @@ public class AirlineReservationSystem {
     public Booking createBooking(Passenger passenger, Flight flight, List<Seat> seats) {
         requireRegisteredPassenger(passenger);
         requireRegisteredFlight(flight);
-        requireScheduledFlight(flight);
-        List<Seat> validatedSeats = Booking.copyValidatedSeats(seats);
-        return createValidatedBooking(passenger, flight, validatedSeats);
+        return createValidatedBooking(passenger, flight, seats);
     }
 
     public Booking findBookingById(String bookingId) {
@@ -225,34 +219,27 @@ public class AirlineReservationSystem {
     }
 
     /**
-     * Cancels a scheduled or boarding flight and cascades cancellation/refund to its open bookings.
+     * Cancels a scheduled or boarding flight and cascades cancellation/refund to its bookings.
      */
     public void cancelFlight(String flightId) {
         Flight flight = findFlightById(flightId);
         flight.cancel();
         for (Booking booking : bookings.values()) {
-            if (booking.getFlight() == flight
-                    && (booking.getStatus() == BookingStatus.PENDING
-                    || booking.getStatus() == BookingStatus.CONFIRMED)) {
-                booking.cancelBooking();
+            if (booking.getFlight() == flight) {
+                booking.onFlightCancelled();
             }
         }
     }
 
     /**
-     * Marks a departed flight as ARRIVED, completing checked-in bookings and expiring pending ones.
+     * Marks a departed flight as ARRIVED and cascades arrival handling to its bookings.
      */
     public void arriveFlight(String flightId) {
         Flight flight = findFlightById(flightId);
         flight.updateStatus(FlightStatus.ARRIVED);
         for (Booking booking : bookings.values()) {
-            if (booking.getFlight() != flight) {
-                continue;
-            }
-            if (booking.getStatus() == BookingStatus.CHECKED_IN) {
-                booking.complete();
-            } else if (booking.getStatus() == BookingStatus.PENDING) {
-                booking.cancelPendingOnArrival();
+            if (booking.getFlight() == flight) {
+                booking.onFlightArrived();
             }
         }
     }
@@ -280,23 +267,10 @@ public class AirlineReservationSystem {
     }
 
     private Booking createValidatedBooking(Passenger passenger, Flight flight, List<Seat> seats) {
-        for (Seat seat : seats) {
-            if (!flight.containsSeat(seat)) {
-                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber()
-                        + " does not belong to flight " + flight.getFlightId());
-            }
-            if (!seat.isAvailable()) {
-                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber()
-                        + " is not available (status: " + seat.getStatus() + ")");
-            }
-        }
-        for (Seat seat : seats) {
-            seat.reserve();
-        }
-        String bookingId = "BK-" + (++bookingSequence);
-        Booking booking = new Booking(bookingId, flight, passenger, seats, LocalDateTime.now(clock));
+        String bookingId = "BK-" + (bookingSequence + 1);
+        Booking booking = Booking.createReserved(bookingId, flight, passenger, seats, LocalDateTime.now(clock));
+        bookingSequence++;
         bookings.put(bookingId, booking);
-        passenger.addBooking(booking);
         return booking;
     }
 
@@ -330,13 +304,6 @@ public class AirlineReservationSystem {
         Booking registered = findBookingById(booking.getBookingId());
         if (registered != booking) {
             throw new ValidationException("Booking must be registered in the system");
-        }
-    }
-
-    private static void requireScheduledFlight(Flight flight) {
-        if (flight.getStatus() != FlightStatus.SCHEDULED) {
-            throw new InvalidStateException("Cannot create booking for flight " + flight.getFlightId()
-                    + " in status: " + flight.getStatus());
         }
     }
 

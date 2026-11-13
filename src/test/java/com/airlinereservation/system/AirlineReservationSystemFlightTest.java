@@ -178,6 +178,10 @@ class AirlineReservationSystemFlightTest {
         Booking alreadyCancelled = system.createBooking("PAX-01", "FL-01", List.of("1C"));
         system.cancelBooking(alreadyCancelled.getBookingId());
 
+        Booking checkedInBooking = system.createBooking("PAX-01", "FL-01", List.of("1D"));
+        Payment checkedInPayment = system.processPayment(checkedInBooking.getBookingId(), PaymentMethod.E_WALLET, amount -> true);
+        system.checkIn(checkedInBooking.getBookingId());
+
         Booking otherFlightBooking = system.createBooking("PAX-01", "FL-02", List.of("1A"));
         Payment otherPayment = system.processPayment(otherFlightBooking.getBookingId(), PaymentMethod.CASH, amount -> true);
 
@@ -188,10 +192,13 @@ class AirlineReservationSystemFlightTest {
         assertEquals(BookingStatus.CANCELLED, pendingBooking.getStatus());
         assertEquals(BookingStatus.CANCELLED, confirmedBooking.getStatus());
         assertEquals(BookingStatus.CANCELLED, alreadyCancelled.getStatus());
+        assertEquals(BookingStatus.CANCELLED, checkedInBooking.getStatus());
         assertEquals(PaymentStatus.REFUNDED, confirmedPayment.getStatus());
+        assertEquals(PaymentStatus.REFUNDED, checkedInPayment.getStatus());
         assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("1A").getStatus());
         assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("1B").getStatus());
         assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("1C").getStatus());
+        assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("1D").getStatus());
 
         assertEquals(FlightStatus.SCHEDULED, flight2.getStatus());
         assertEquals(BookingStatus.CONFIRMED, otherFlightBooking.getStatus());
