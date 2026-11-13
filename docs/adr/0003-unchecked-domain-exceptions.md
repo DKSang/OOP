@@ -1,0 +1,3 @@
+# Dùng Unchecked Exception (kế thừa `RuntimeException`) cho toàn bộ lỗi nghiệp vụ domain
+
+Trong Milestone 4 (Core Implementation), nhóm quyết định thiết kế hệ thống custom exception bắt nguồn từ `AirlineReservationException extends RuntimeException` (unchecked) thay vì checked `Exception`. Việc dùng checked exception sẽ ép mọi tầng gọi — bao gồm các functional interface như `PaymentStrategy`, thao tác trên Java Streams/Collections và các Event Listener của Swing GUI ở Milestone 6 — phải khai báo `throws` hoặc bọc `try/catch` dày đặc. Dùng unchecked domain exception giữ chữ ký phương thức và test TDD (`assertThrows`) gọn gàng, đồng thời vẫn cho phép tầng UI/entry point bắt lỗi tập trung theo phân cấp lớp ngoại lệ rõ ràng.

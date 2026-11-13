@@ -23,7 +23,7 @@ Một chỗ ngồi mở bán gắn với một `Flight` cụ thể (được kh�
 _Avoid_: PhysicalSeat, Chair
 
 **EconomySeat**:
-Ghế hạng phổ thông trên một `Flight`, tính giá vé dựa trên giá cơ sở (`basePrice`) tiêu chuẩn.
+Ghế hạng phổ thông trên một `Flight`, tính giá vé theo giá cơ sở (`basePrice`) tiêu chuẩn hoặc cộng phụ phí khi có chỗ để chân rộng (`hasExtraLegroom`).
 _Avoid_: NormalSeat, StandardSeat
 
 **BusinessSeat**:
@@ -59,5 +59,5 @@ Giao diện trừu tượng định nghĩa hành vi xử lý thanh toán cho m�
 _Avoid_: PaymentProcessor, BillingGateway
 
 **AirlineReservationSystem**:
-Bộ điều phối trung tâm của hệ thống, quản lý danh mục `Flight`, `Aircraft`, `Airport`, `Booking` và điều phối các luồng nghiệp vụ tìm kiếm chuyến bay, tạo đặt chỗ và hủy đặt chỗ.
+Bộ điều phối trung tâm của hệ thống, quản lý danh mục `Flight`, `Aircraft`, `Airport`, `Passenger`, `Booking` và điều phối các luồng nghiệp vụ tìm kiếm chuyến bay, tạo đặt chỗ và hủy đặt chỗ.
 _Avoid_: FlightManager, SeatManager, BookingManager
