@@ -1,4 +1,4 @@
-# Repository Guidelines
+# GEMINI.md
 
 Behavioral guidelines to reduce common LLM coding mistakes, merged with repo-specific agent skill configuration.
 
