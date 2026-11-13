@@ -59,4 +59,25 @@ class PaymentTest {
         assertThrows(ValidationException.class, () -> new Payment("PAY-3", 100.0, null));
         assertThrows(ValidationException.class, () -> new Payment("PAY-3", 100.0, PaymentMethod.CASH, null));
     }
+
+    @Test
+    void refundsCompletedPaymentAndRejectsNonCompletedRefunds() {
+        Payment pending = new Payment("PAY-10", 500_000.0, PaymentMethod.CASH, FIXED_CLOCK);
+        assertThrows(PaymentException.class, pending::refund);
+        assertEquals(PaymentStatus.PENDING, pending.getStatus());
+
+        Payment failed = new Payment("PAY-11", 500_000.0, PaymentMethod.E_WALLET, FIXED_CLOCK);
+        assertFalse(failed.processPayment(amount -> false));
+        assertThrows(PaymentException.class, failed::refund);
+        assertEquals(PaymentStatus.FAILED, failed.getStatus());
+
+        Payment completed = new Payment("PAY-12", 500_000.0, PaymentMethod.CREDIT_DEBIT_CARD, FIXED_CLOCK);
+        assertTrue(completed.processPayment(amount -> true));
+        completed.refund();
+
+        assertEquals(PaymentStatus.REFUNDED, completed.getStatus());
+        assertEquals(LocalDateTime.ofInstant(FIXED_INSTANT, ZONE), completed.getPaidAt());
+        assertThrows(PaymentException.class, completed::refund);
+        assertEquals(PaymentStatus.REFUNDED, completed.getStatus());
+    }
 }

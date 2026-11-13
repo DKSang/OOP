@@ -82,11 +82,7 @@ public class Booking {
         if (status != BookingStatus.PENDING) {
             throw new InvalidStateException("Cannot confirm booking " + bookingId + " in status: " + status);
         }
-        FlightStatus flightStatus = flight.getStatus();
-        if (flightStatus != FlightStatus.SCHEDULED && flightStatus != FlightStatus.BOARDING) {
-            throw new InvalidStateException("Cannot confirm booking " + bookingId
-                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
-        }
+        requireActiveFlight("confirm");
         for (Seat seat : selectedSeats) {
             if (seat.getStatus() != SeatStatus.RESERVED) {
                 throw new InvalidStateException("Cannot confirm booking " + bookingId
@@ -111,6 +107,53 @@ public class Booking {
         }
         this.payment = payment;
         this.status = BookingStatus.CONFIRMED;
+    }
+
+    /**
+     * Checks in a confirmed booking while its flight is SCHEDULED or BOARDING.
+     */
+    public void checkIn() {
+        if (status != BookingStatus.CONFIRMED) {
+            throw new InvalidStateException("Cannot check in booking " + bookingId + " in status: " + status);
+        }
+        requireActiveFlight("check in");
+        this.status = BookingStatus.CHECKED_IN;
+    }
+
+    /**
+     * Cancels a pending or confirmed booking before departure, releasing seats and refunding payment.
+     */
+    public boolean cancelBooking() {
+        if (status != BookingStatus.PENDING && status != BookingStatus.CONFIRMED) {
+            throw new InvalidStateException("Cannot cancel booking " + bookingId + " in status: " + status);
+        }
+        FlightStatus flightStatus = flight.getStatus();
+        if (flightStatus == FlightStatus.DEPARTED || flightStatus == FlightStatus.ARRIVED) {
+            throw new InvalidStateException("Cannot cancel booking " + bookingId
+                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
+        }
+        for (Seat seat : selectedSeats) {
+            if (seat.isAvailable()) {
+                throw new InvalidStateException("Cannot cancel booking " + bookingId
+                        + "; seat " + seat.getSeatNumber() + " is already available");
+            }
+        }
+        if (payment != null) {
+            payment.refund();
+        }
+        for (Seat seat : selectedSeats) {
+            seat.release();
+        }
+        this.status = BookingStatus.CANCELLED;
+        return true;
+    }
+
+    private void requireActiveFlight(String action) {
+        FlightStatus flightStatus = flight.getStatus();
+        if (flightStatus != FlightStatus.SCHEDULED && flightStatus != FlightStatus.BOARDING) {
+            throw new InvalidStateException("Cannot " + action + " booking " + bookingId
+                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
+        }
     }
 
     public double calculateTotalPrice() {

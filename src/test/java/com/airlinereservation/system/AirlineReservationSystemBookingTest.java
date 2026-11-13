@@ -2,6 +2,8 @@ package com.airlinereservation.system;
 
 import com.airlinereservation.enums.BookingStatus;
 import com.airlinereservation.enums.FlightStatus;
+import com.airlinereservation.enums.PaymentMethod;
+import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.enums.SeatStatus;
 import com.airlinereservation.exception.EntityNotFoundException;
 import com.airlinereservation.exception.InvalidStateException;
@@ -9,10 +11,11 @@ import com.airlinereservation.exception.SeatNotAvailableException;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.model.Aircraft;
 import com.airlinereservation.model.Airport;
+import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.EconomySeat;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Passenger;
-import com.airlinereservation.model.Booking;
+import com.airlinereservation.model.Payment;
 import com.airlinereservation.model.Seat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -165,5 +168,106 @@ class AirlineReservationSystemBookingTest {
         assertThrows(EntityNotFoundException.class, () -> system.findBookingById("BK-404"));
         assertTrue(passenger.getBookingHistory().isEmpty());
         assertTrue(system.getBookings().isEmpty());
+    }
+
+    @Test
+    void checksInConfirmedBookingAndRejectsInvalidCheckInRequests() {
+        Booking pendingBooking = system.createBooking("PAX-01", "FL-01", List.of("1A"));
+        assertThrows(InvalidStateException.class, () -> system.checkIn(pendingBooking.getBookingId()));
+
+        Booking scheduledBooking = system.createBooking("PAX-01", "FL-01", List.of("1B"));
+        system.processPayment(scheduledBooking.getBookingId(), PaymentMethod.CASH, amount -> true);
+        system.checkIn(scheduledBooking.getBookingId());
+        assertEquals(BookingStatus.CHECKED_IN, scheduledBooking.getStatus());
+        assertThrows(InvalidStateException.class, () -> system.checkIn(scheduledBooking.getBookingId()));
+
+        Booking boardingBooking = system.createBooking("PAX-01", "FL-01", List.of("1C"));
+        system.processPayment(boardingBooking.getBookingId(), PaymentMethod.CASH, amount -> true);
+        Booking departedBooking = system.createBooking("PAX-01", "FL-01", List.of("1D"));
+        system.processPayment(departedBooking.getBookingId(), PaymentMethod.CASH, amount -> true);
+
+        flight1.updateStatus(FlightStatus.BOARDING);
+        system.checkIn(boardingBooking.getBookingId());
+        assertEquals(BookingStatus.CHECKED_IN, boardingBooking.getStatus());
+
+        flight1.updateStatus(FlightStatus.DEPARTED);
+        assertThrows(InvalidStateException.class, () -> system.checkIn(departedBooking.getBookingId()));
+        assertEquals(BookingStatus.CONFIRMED, departedBooking.getStatus());
+
+        assertThrows(ValidationException.class, () -> system.checkIn(null));
+        assertThrows(ValidationException.class, () -> system.checkIn("  "));
+        assertThrows(EntityNotFoundException.class, () -> system.checkIn("BK-404"));
+    }
+
+    @Test
+    void cancelsPendingAndConfirmedBookingsRefundsPaymentAndAllowsAnotherPassengerToRebookReleasedSeats() {
+        Passenger secondPassenger = new Passenger(
+                "PAX-02", "Tran Thi B", "b@example.com", "0902222222",
+                LocalDate.of(1999, 5, 20), "Female", "CCCD-002"
+        );
+        system.registerPassenger(secondPassenger);
+
+        Booking pendingBooking = system.createBooking("PAX-01", "FL-01", List.of("1A", "2A"));
+        assertTrue(system.cancelBooking(pendingBooking.getBookingId()));
+        assertEquals(BookingStatus.CANCELLED, pendingBooking.getStatus());
+        assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("1A").getStatus());
+        assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("2A").getStatus());
+
+        Booking confirmedBooking = system.createBooking("PAX-01", "FL-01", List.of("1B", "2B"));
+        Payment payment = system.processPayment(confirmedBooking.getBookingId(), PaymentMethod.CREDIT_DEBIT_CARD, amount -> true);
+        assertTrue(system.cancelBooking(confirmedBooking.getBookingId()));
+        assertEquals(BookingStatus.CANCELLED, confirmedBooking.getStatus());
+        assertEquals(PaymentStatus.REFUNDED, payment.getStatus());
+        assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("1B").getStatus());
+        assertEquals(SeatStatus.AVAILABLE, flight1.findSeat("2B").getStatus());
+
+        Booking rebooked = system.createBooking("PAX-02", "FL-01", List.of("1A", "1B", "2A", "2B"));
+        Payment rebookedPayment = system.processPayment(rebooked.getBookingId(), PaymentMethod.E_WALLET, amount -> true);
+        assertEquals(BookingStatus.CONFIRMED, rebooked.getStatus());
+        assertEquals(PaymentStatus.COMPLETED, rebookedPayment.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight1.findSeat("1A").getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight1.findSeat("1B").getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight1.findSeat("2A").getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight1.findSeat("2B").getStatus());
+        assertEquals(List.of(rebooked), secondPassenger.getBookingHistory());
+    }
+
+    @Test
+    void rejectsCancelBookingForMissingIdCheckedInCancelledOrDepartedArrivedFlight() {
+        assertThrows(ValidationException.class, () -> system.cancelBooking(null));
+        assertThrows(ValidationException.class, () -> system.cancelBooking("  "));
+        assertThrows(EntityNotFoundException.class, () -> system.cancelBooking("BK-404"));
+
+        Booking checkedIn = system.createBooking("PAX-01", "FL-01", List.of("1A"));
+        Payment checkedInPayment = system.processPayment(checkedIn.getBookingId(), PaymentMethod.CASH, amount -> true);
+        system.checkIn(checkedIn.getBookingId());
+
+        assertThrows(InvalidStateException.class, () -> system.cancelBooking(checkedIn.getBookingId()));
+        assertEquals(BookingStatus.CHECKED_IN, checkedIn.getStatus());
+        assertEquals(PaymentStatus.COMPLETED, checkedInPayment.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight1.findSeat("1A").getStatus());
+
+        Booking cancelled = system.createBooking("PAX-01", "FL-01", List.of("1B"));
+        assertTrue(system.cancelBooking(cancelled.getBookingId()));
+        assertThrows(InvalidStateException.class, () -> system.cancelBooking(cancelled.getBookingId()));
+
+        Booking pendingOnDeparted = system.createBooking("PAX-01", "FL-02", List.of("1A"));
+        Booking confirmedOnDeparted = system.createBooking("PAX-01", "FL-02", List.of("1B"));
+        Payment departedPayment = system.processPayment(confirmedOnDeparted.getBookingId(), PaymentMethod.CASH, amount -> true);
+
+        flight2.updateStatus(FlightStatus.BOARDING);
+        flight2.updateStatus(FlightStatus.DEPARTED);
+
+        assertThrows(InvalidStateException.class, () -> system.cancelBooking(pendingOnDeparted.getBookingId()));
+        assertThrows(InvalidStateException.class, () -> system.cancelBooking(confirmedOnDeparted.getBookingId()));
+        assertEquals(BookingStatus.PENDING, pendingOnDeparted.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, confirmedOnDeparted.getStatus());
+        assertEquals(PaymentStatus.COMPLETED, departedPayment.getStatus());
+        assertEquals(SeatStatus.RESERVED, flight2.findSeat("1A").getStatus());
+        assertEquals(SeatStatus.OCCUPIED, flight2.findSeat("1B").getStatus());
+
+        flight2.updateStatus(FlightStatus.ARRIVED);
+        assertThrows(InvalidStateException.class, () -> system.cancelBooking(pendingOnDeparted.getBookingId()));
+        assertThrows(InvalidStateException.class, () -> system.cancelBooking(confirmedOnDeparted.getBookingId()));
     }
 }

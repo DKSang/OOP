@@ -196,6 +196,22 @@ public class AirlineReservationSystem {
         return executeBookingPayment(booking, method, strategy);
     }
 
+    /**
+     * Checks in an existing confirmed booking while its flight is scheduled or boarding.
+     */
+    public void checkIn(String bookingId) {
+        Booking booking = findBookingById(bookingId);
+        booking.checkIn();
+    }
+
+    /**
+     * Cancels an existing booking, releasing its seats and refunding any completed payment.
+     */
+    public boolean cancelBooking(String bookingId) {
+        Booking booking = findBookingById(bookingId);
+        return booking.cancelBooking();
+    }
+
     private Payment executeBookingPayment(Booking booking, PaymentMethod method, PaymentStrategy strategy) {
         ValidationException.requireNonNull(method, "Payment method");
         ValidationException.requireNonNull(strategy, "Payment strategy");

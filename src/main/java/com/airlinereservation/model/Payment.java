@@ -66,4 +66,14 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
         return false;
     }
+
+    /**
+     * Refunds a completed payment, transitioning its status to REFUNDED.
+     */
+    public void refund() {
+        if (status != PaymentStatus.COMPLETED) {
+            throw new PaymentException("Cannot refund payment " + paymentId + " in status: " + status);
+        }
+        this.status = PaymentStatus.REFUNDED;
+    }
 }
