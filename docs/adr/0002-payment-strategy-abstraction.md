@@ -1,0 +1,3 @@
+# Tách dữ liệu giao dịch (Payment) và thuật toán thanh toán (PaymentStrategy)
+
+Ở Milestone 2 (Mục 2.3), nhóm đã phân biệt giữa bản ghi giao dịch `Payment` và tác nhân xử lý `Payment Service`. Sang Milestone 3, chúng tôi quyết định giữ `Payment` làm lớp thực thể lưu trữ trạng thái giao dịch (`PaymentStatus`) gắn với `Booking` theo quan hệ **Composition**, đồng thời thiết kế `<<interface>> PaymentStrategy` cho hành vi xử lý thanh toán. Bên cạnh 3 phương thức gốc từ FR7 (`CardPayment`, `EWalletPayment`, `BankTransferPayment`), nhóm bổ sung `CashPayment` (`PaymentMethod.CASH`) như một bản mở rộng thiết kế (design extension) để chứng minh tính tuân thủ nguyên lý **Open/Closed Principle (SOLID)** và chuẩn bị trực tiếp cho mẫu thiết kế **Strategy Pattern** ở Milestone 5.

@@ -1,0 +1,3 @@
+# Khởi tạo sơ đồ Seat riêng theo từng Flight (Composition) thay vì tách lớp FlightSeat
+
+Trong Milestone 2 (Mục 3.4), nhóm ghi nhận vấn đề một `Aircraft` có thể khai thác nhiều `Flight` khác nhau, nên trạng thái ghế (`SeatStatus`) phải độc lập theo từng chuyến bay. Ở Milestone 3, chúng tôi quyết định giữ một cây kế thừa trừu tượng `Seat` (`EconomySeat`, `BusinessSeat`) gắn trực tiếp vào từng `Flight` theo quan hệ **Composition** (`1` `Flight` sở hữu `1..*` `Seat` được sinh ra từ cấu hình sức chứa của `Aircraft`), thay vì tách thành hai lớp `Seat` vật lý và `FlightSeat`. Quyết định này giúp cô lập hoàn toàn trạng thái đặt chỗ giữa các chuyến bay dùng chung tàu bay, đồng thời giữ mô hình lớp tinh gọn và thể hiện rõ tính Đa hình (Polymorphism) khi tính giá vé trên `Seat`.

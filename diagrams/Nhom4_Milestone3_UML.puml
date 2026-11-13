@@ -1,0 +1,239 @@
+@startuml AirlineReservationSystem_Milestone3
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+title Milestone 3 - UML Class Diagram: Airline Reservation System (Đề tài 21 - Nhóm 4)
+
+' ==================== SYSTEM COORDINATOR ====================
+class AirlineReservationSystem {
+    - flights: List<Flight>
+    - aircrafts: List<Aircraft>
+    - airports: List<Airport>
+    - bookings: List<Booking>
+    + searchFlights(depCode: String, arrCode: String, date: LocalDate, seatCount: int): List<Flight>
+    + createBooking(passenger: Passenger, flight: Flight, seats: List<Seat>): Booking
+    + cancelBooking(bookingId: String): boolean
+    + addFlight(flight: Flight): void
+    + addAircraft(aircraft: Aircraft): void
+}
+
+' ==================== PERSON HIERARCHY ====================
+abstract class Person {
+    # id: String
+    # fullName: String
+    # email: String
+    # phoneNumber: String
+    + updateContactInfo(email: String, phone: String): void
+    + {abstract} getRole(): String
+}
+
+class Passenger {
+    - dateOfBirth: LocalDate
+    - gender: String
+    - passportOrId: String
+    - bookingHistory: List<Booking>
+    + updateProfile(fullName: String, passportOrId: String, phone: String, email: String): void
+    + addBooking(booking: Booking): void
+    + cancelBooking(bookingId: String): boolean
+    + getBookingHistory(): List<Booking>
+    + getRole(): String
+}
+
+class Admin {
+    - staffCode: String
+    - department: String
+    + getRole(): String
+}
+
+Person <|-- Passenger
+Person <|-- Admin
+
+' ==================== FLIGHT, AIRCRAFT, AIRPORT ====================
+class Airport {
+    - airportCode: String
+    - airportName: String
+    - city: String
+    + getAirportCode(): String
+    + getAirportName(): String
+    + getCity(): String
+}
+
+class Aircraft {
+    - aircraftId: String
+    - model: String
+    - manufacturer: String
+    - seatCapacity: int
+    + getCapacity(): int
+    + getModelInfo(): String
+}
+
+class Flight {
+    - flightId: String
+    - flightNumber: String
+    - departureAirport: Airport
+    - arrivalAirport: Airport
+    - departureTime: LocalDateTime
+    - arrivalTime: LocalDateTime
+    - aircraft: Aircraft
+    - seats: List<Seat>
+    - basePrice: double
+    - status: FlightStatus
+    + matches(depCode: String, arrCode: String, date: LocalDate): boolean
+    + getAvailableSeats(): List<Seat>
+    + hasAvailableSeats(count: int): boolean
+    + updateStatus(newStatus: FlightStatus): void
+    + cancel(): void
+    + getBasePrice(): double
+}
+
+' ==================== SEAT HIERARCHY ====================
+abstract class Seat {
+    # seatNumber: String
+    # status: SeatStatus
+    + isAvailable(): boolean
+    + reserve(): void
+    + occupy(): void
+    + release(): void
+    + {abstract} calculatePrice(basePrice: double): double
+    + {abstract} getSeatType(): String
+}
+
+class EconomySeat {
+    - hasExtraLegroom: boolean
+    + calculatePrice(basePrice: double): double
+    + getSeatType(): String
+}
+
+class BusinessSeat {
+    - priceMultiplier: double
+    - hasLoungeAccess: boolean
+    + calculatePrice(basePrice: double): double
+    + getSeatType(): String
+}
+
+Seat <|-- EconomySeat
+Seat <|-- BusinessSeat
+
+' ==================== BOOKING & PAYMENT ====================
+class Booking {
+    - bookingId: String
+    - flight: Flight
+    - passenger: Passenger
+    - selectedSeats: List<Seat>
+    - payment: Payment
+    - totalPrice: double
+    - status: BookingStatus
+    - createdAt: LocalDateTime
+    + calculateTotalPrice(): double
+    + confirmBooking(payment: Payment): void
+    + cancelBooking(): boolean
+    + checkIn(): void
+}
+
+class Payment {
+    - paymentId: String
+    - amount: double
+    - method: PaymentMethod
+    - status: PaymentStatus
+    - paidAt: LocalDateTime
+    + processPayment(strategy: PaymentStrategy): boolean
+    + refund(): void
+}
+
+interface PaymentStrategy <<interface>> {
+    + pay(amount: double): boolean
+}
+
+class CardPayment {
+    - cardNumber: String
+    - cardHolderName: String
+    + pay(amount: double): boolean
+}
+
+class EWalletPayment {
+    - walletId: String
+    - provider: String
+    + pay(amount: double): boolean
+}
+
+class BankTransferPayment {
+    - bankName: String
+    - accountNumber: String
+    + pay(amount: double): boolean
+}
+
+class CashPayment {
+    - counterCode: String
+    - cashierId: String
+    + pay(amount: double): boolean
+}
+
+PaymentStrategy <|.. CardPayment
+PaymentStrategy <|.. EWalletPayment
+PaymentStrategy <|.. BankTransferPayment
+PaymentStrategy <|.. CashPayment
+
+' ==================== ENUMS ====================
+enum FlightStatus <<enumeration>> {
+    SCHEDULED
+    BOARDING
+    DEPARTED
+    ARRIVED
+    CANCELLED
+}
+
+enum SeatStatus <<enumeration>> {
+    AVAILABLE
+    RESERVED
+    OCCUPIED
+}
+
+enum BookingStatus <<enumeration>> {
+    PENDING
+    CONFIRMED
+    CHECKED_IN
+    COMPLETED
+    CANCELLED
+}
+
+enum PaymentMethod <<enumeration>> {
+    CREDIT_DEBIT_CARD
+    E_WALLET
+    BANK_TRANSFER
+    CASH
+}
+
+enum PaymentStatus <<enumeration>> {
+    PENDING
+    COMPLETED
+    FAILED
+    REFUNDED
+}
+
+' ==================== RELATIONSHIPS & MULTIPLICITY ====================
+AirlineReservationSystem "1" o-- "0..*" Flight : manages >
+AirlineReservationSystem "1" o-- "0..*" Aircraft : manages >
+AirlineReservationSystem "1" o-- "0..*" Airport : manages >
+AirlineReservationSystem "1" o-- "0..*" Booking : manages >
+
+Flight "0..*" --> "1" Aircraft : operatedBy >
+Flight "0..*" --> "1" Airport : departureAirport >
+Flight "0..*" --> "1" Airport : arrivalAirport >
+Flight "1" *-- "1..*" Seat : owns >
+Flight ..> FlightStatus
+
+Seat ..> SeatStatus
+
+Passenger "1" <--> "0..*" Booking : places >
+Booking "0..*" --> "1" Flight : booksFor >
+Booking "0..1" --> "1..*" Seat : reserves >
+Booking "1" *-- "0..1" Payment : has >
+Booking ..> BookingStatus
+
+Payment ..> PaymentStrategy : uses >
+Payment ..> PaymentMethod
+Payment ..> PaymentStatus
+
+@enduml
