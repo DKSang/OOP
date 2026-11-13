@@ -26,4 +26,11 @@ public class ValidationException extends AirlineReservationException {
         }
         return value.trim();
     }
+
+    public static double requirePositive(double value, String fieldName) {
+        if (!Double.isFinite(value) || value <= 0) {
+            throw new ValidationException(fieldName + " must be positive");
+        }
+        return value;
+    }
 }
