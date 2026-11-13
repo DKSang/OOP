@@ -1,6 +1,11 @@
 package com.airlinereservation.model;
 
 import com.airlinereservation.enums.BookingStatus;
+import com.airlinereservation.enums.FlightStatus;
+import com.airlinereservation.enums.PaymentStatus;
+import com.airlinereservation.enums.SeatStatus;
+import com.airlinereservation.exception.InvalidStateException;
+import com.airlinereservation.exception.PaymentException;
 import com.airlinereservation.exception.ValidationException;
 
 import java.time.LocalDateTime;
@@ -13,10 +18,13 @@ import java.util.Set;
  */
 public class Booking {
 
+    private static final double PRICE_MATCH_TOLERANCE = 1e-6;
+
     private final String bookingId;
     private final Flight flight;
     private final Passenger passenger;
     private final List<Seat> selectedSeats;
+    private Payment payment;
     private final double totalPrice;
     private BookingStatus status;
     private final LocalDateTime createdAt;
@@ -59,8 +67,50 @@ public class Booking {
         return status;
     }
 
+    public Payment getPayment() {
+        return payment;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /**
+     * Verifies that the booking, its flight, and all selected seats can transition to CONFIRMED.
+     */
+    public void validateConfirmable() {
+        if (status != BookingStatus.PENDING) {
+            throw new InvalidStateException("Cannot confirm booking " + bookingId + " in status: " + status);
+        }
+        FlightStatus flightStatus = flight.getStatus();
+        if (flightStatus != FlightStatus.SCHEDULED && flightStatus != FlightStatus.BOARDING) {
+            throw new InvalidStateException("Cannot confirm booking " + bookingId
+                    + " for flight " + flight.getFlightId() + " in status: " + flightStatus);
+        }
+        for (Seat seat : selectedSeats) {
+            if (seat.getStatus() != SeatStatus.RESERVED) {
+                throw new InvalidStateException("Cannot confirm booking " + bookingId
+                        + "; seat " + seat.getSeatNumber() + " is in status: " + seat.getStatus());
+            }
+        }
+    }
+
+    public void confirmBooking(Payment payment) {
+        ValidationException.requireNonNull(payment, "Payment");
+        validateConfirmable();
+        if (payment.getStatus() != PaymentStatus.COMPLETED) {
+            throw new PaymentException("Cannot confirm booking " + bookingId
+                    + " with payment " + payment.getPaymentId() + " in status: " + payment.getStatus());
+        }
+        if (Math.abs(payment.getAmount() - totalPrice) > PRICE_MATCH_TOLERANCE) {
+            throw new PaymentException("Payment amount " + payment.getAmount()
+                    + " does not match booking total " + totalPrice);
+        }
+        for (Seat seat : selectedSeats) {
+            seat.occupy();
+        }
+        this.payment = payment;
+        this.status = BookingStatus.CONFIRMED;
     }
 
     public double calculateTotalPrice() {

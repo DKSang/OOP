@@ -1,6 +1,7 @@
 package com.airlinereservation.system;
 
 import com.airlinereservation.enums.FlightStatus;
+import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.DuplicateEntityException;
 import com.airlinereservation.exception.EntityNotFoundException;
 import com.airlinereservation.exception.InvalidStateException;
@@ -11,7 +12,9 @@ import com.airlinereservation.model.Airport;
 import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Passenger;
+import com.airlinereservation.model.Payment;
 import com.airlinereservation.model.Seat;
+import com.airlinereservation.payment.PaymentStrategy;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -36,6 +39,7 @@ public class AirlineReservationSystem {
     private final Map<String, Passenger> passengers = new LinkedHashMap<>();
     private final Map<String, Booking> bookings = new LinkedHashMap<>();
     private long bookingSequence;
+    private long paymentSequence;
 
     public AirlineReservationSystem() {
         this(Clock.systemDefaultZone());
@@ -182,6 +186,29 @@ public class AirlineReservationSystem {
         return List.copyOf(bookings.values());
     }
 
+    public Payment processPayment(String bookingId, PaymentMethod method, PaymentStrategy strategy) {
+        Booking booking = findBookingById(bookingId);
+        return executeBookingPayment(booking, method, strategy);
+    }
+
+    public Payment processPayment(Booking booking, PaymentMethod method, PaymentStrategy strategy) {
+        requireRegisteredBooking(booking);
+        return executeBookingPayment(booking, method, strategy);
+    }
+
+    private Payment executeBookingPayment(Booking booking, PaymentMethod method, PaymentStrategy strategy) {
+        ValidationException.requireNonNull(method, "Payment method");
+        ValidationException.requireNonNull(strategy, "Payment strategy");
+        booking.validateConfirmable();
+
+        String paymentId = "PAY-" + (++paymentSequence);
+        Payment payment = new Payment(paymentId, booking.getTotalPrice(), method, clock);
+        if (payment.processPayment(strategy)) {
+            booking.confirmBooking(payment);
+        }
+        return payment;
+    }
+
     private Booking createValidatedBooking(Passenger passenger, Flight flight, List<Seat> seats) {
         for (Seat seat : seats) {
             if (!flight.containsSeat(seat)) {
@@ -225,6 +252,14 @@ public class AirlineReservationSystem {
         Flight registered = findFlightById(flight.getFlightId());
         if (registered != flight) {
             throw new ValidationException("Flight must be registered in the system");
+        }
+    }
+
+    private void requireRegisteredBooking(Booking booking) {
+        ValidationException.requireNonNull(booking, "Booking");
+        Booking registered = findBookingById(booking.getBookingId());
+        if (registered != booking) {
+            throw new ValidationException("Booking must be registered in the system");
         }
     }
 
