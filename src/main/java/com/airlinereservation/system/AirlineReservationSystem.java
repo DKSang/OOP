@@ -1,26 +1,49 @@
 package com.airlinereservation.system;
 
+import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.exception.DuplicateEntityException;
 import com.airlinereservation.exception.EntityNotFoundException;
+import com.airlinereservation.exception.InvalidStateException;
+import com.airlinereservation.exception.SeatNotAvailableException;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.model.Aircraft;
 import com.airlinereservation.model.Airport;
+import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
+import com.airlinereservation.model.Passenger;
+import com.airlinereservation.model.Seat;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Central coordinator managing system catalogs and core domain workflows.
  */
 public class AirlineReservationSystem {
 
+    private final Clock clock;
     private final Map<String, Airport> airports = new LinkedHashMap<>();
     private final Map<String, Aircraft> aircrafts = new LinkedHashMap<>();
     private final Map<String, Flight> flights = new LinkedHashMap<>();
+    private final Map<String, Passenger> passengers = new LinkedHashMap<>();
+    private final Map<String, Booking> bookings = new LinkedHashMap<>();
+    private long bookingSequence;
+
+    public AirlineReservationSystem() {
+        this(Clock.systemDefaultZone());
+    }
+
+    public AirlineReservationSystem(Clock clock) {
+        this.clock = ValidationException.requireNonNull(clock, "Clock");
+    }
 
     public void addAirport(Airport airport) {
         ValidationException.requireNonNull(airport, "Airport");
@@ -111,6 +134,122 @@ public class AirlineReservationSystem {
                 .filter(flight -> flight.matches(trimmedDep, trimmedArr, date)
                         && flight.hasAvailableSeats(seatCount))
                 .toList();
+    }
+
+    public void registerPassenger(Passenger passenger) {
+        ValidationException.requireNonNull(passenger, "Passenger");
+        String key = passenger.getId();
+        if (passengers.containsKey(key)) {
+            throw new DuplicateEntityException("Passenger already exists with ID: " + key);
+        }
+        boolean duplicatePassport = passengers.values().stream()
+                .anyMatch(existing -> existing.getPassportOrId().equalsIgnoreCase(passenger.getPassportOrId()));
+        if (duplicatePassport) {
+            throw new DuplicateEntityException("Passenger already exists with passport/ID: " + passenger.getPassportOrId());
+        }
+        passengers.put(key, passenger);
+    }
+
+    public Passenger findPassengerById(String passengerId) {
+        return findById(passengers, passengerId, "Passenger");
+    }
+
+    public List<Passenger> getPassengers() {
+        return List.copyOf(passengers.values());
+    }
+
+    public Booking createBooking(String passengerId, String flightId, List<String> seatNumbers) {
+        Passenger passenger = findPassengerById(passengerId);
+        Flight flight = findFlightById(flightId);
+        requireScheduledFlight(flight);
+        List<Seat> seats = resolveSeatNumbers(flight, seatNumbers);
+        return createValidatedBooking(passenger, flight, seats);
+    }
+
+    public Booking createBooking(Passenger passenger, Flight flight, List<Seat> seats) {
+        requireRegisteredPassenger(passenger);
+        requireRegisteredFlight(flight);
+        requireScheduledFlight(flight);
+        List<Seat> validatedSeats = Booking.copyValidatedSeats(seats);
+        return createValidatedBooking(passenger, flight, validatedSeats);
+    }
+
+    public Booking findBookingById(String bookingId) {
+        return findById(bookings, bookingId, "Booking");
+    }
+
+    public List<Booking> getBookings() {
+        return List.copyOf(bookings.values());
+    }
+
+    private Booking createValidatedBooking(Passenger passenger, Flight flight, List<Seat> seats) {
+        for (Seat seat : seats) {
+            if (!flight.containsSeat(seat)) {
+                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber()
+                        + " does not belong to flight " + flight.getFlightId());
+            }
+            if (!seat.isAvailable()) {
+                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber()
+                        + " is not available (status: " + seat.getStatus() + ")");
+            }
+        }
+        for (Seat seat : seats) {
+            seat.reserve();
+        }
+        String bookingId = "BK-" + (++bookingSequence);
+        Booking booking = new Booking(bookingId, flight, passenger, seats, LocalDateTime.now(clock));
+        bookings.put(bookingId, booking);
+        passenger.addBooking(booking);
+        return booking;
+    }
+
+    private static <T> T findById(Map<String, T> registry, String id, String entityName) {
+        String key = ValidationException.requireNonBlank(id, entityName + " ID");
+        T entity = registry.get(key);
+        if (entity == null) {
+            throw new EntityNotFoundException(entityName + " not found with ID: " + key);
+        }
+        return entity;
+    }
+
+    private void requireRegisteredPassenger(Passenger passenger) {
+        ValidationException.requireNonNull(passenger, "Passenger");
+        Passenger registered = findPassengerById(passenger.getId());
+        if (registered != passenger) {
+            throw new ValidationException("Passenger must be registered in the system");
+        }
+    }
+
+    private void requireRegisteredFlight(Flight flight) {
+        ValidationException.requireNonNull(flight, "Flight");
+        Flight registered = findFlightById(flight.getFlightId());
+        if (registered != flight) {
+            throw new ValidationException("Flight must be registered in the system");
+        }
+    }
+
+    private static void requireScheduledFlight(Flight flight) {
+        if (flight.getStatus() != FlightStatus.SCHEDULED) {
+            throw new InvalidStateException("Cannot create booking for flight " + flight.getFlightId()
+                    + " in status: " + flight.getStatus());
+        }
+    }
+
+    private static List<Seat> resolveSeatNumbers(Flight flight, List<String> seatNumbers) {
+        ValidationException.requireNonNull(seatNumbers, "Seat numbers");
+        if (seatNumbers.isEmpty()) {
+            throw new ValidationException("Seat numbers must not be empty");
+        }
+        Set<String> seenNumbers = new HashSet<>();
+        List<Seat> resolvedSeats = new ArrayList<>(seatNumbers.size());
+        for (String seatNumber : seatNumbers) {
+            String normalized = normalizeCode(ValidationException.requireNonBlank(seatNumber, "Seat number"));
+            if (!seenNumbers.add(normalized)) {
+                throw new ValidationException("Seat numbers must not contain duplicates: " + normalized);
+            }
+            resolvedSeats.add(flight.findSeat(normalized));
+        }
+        return resolvedSeats;
     }
 
     private static String normalizeCode(String code) {

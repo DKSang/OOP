@@ -134,6 +134,11 @@ public class Flight {
         return seat;
     }
 
+    public boolean containsSeat(Seat seat) {
+        ValidationException.requireNonNull(seat, "Selected seat");
+        return seats.get(seat.getSeatNumber()) == seat;
+    }
+
     public boolean hasAvailableSeats(int count) {
         if (count <= 0) {
             throw new ValidationException("Required seat count must be positive");
