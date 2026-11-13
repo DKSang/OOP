@@ -419,4 +419,132 @@ class BookingTest {
         assertEquals(PaymentStatus.COMPLETED, payDep.getStatus());
         assertEquals(SeatStatus.OCCUPIED, seat1D.getStatus());
     }
+
+    @Test
+    void completesCheckedInBookingOnlyWhenFlightHasArrived() {
+        Airport han = new Airport("HAN", "Noi Bai", "Hanoi");
+        Airport sgn = new Airport("SGN", "Tan Son Nhat", "Ho Chi Minh City");
+        Aircraft a320 = new Aircraft("AC-320", "A320neo", "Airbus", 10);
+        LocalDateTime now = LocalDateTime.of(2026, 11, 13, 10, 30);
+        Passenger passenger = new Passenger(
+                "PAX-01", "Nguyen Van A", "a@example.com", "0901111111",
+                LocalDate.of(1998, 1, 10), "Male", "CCCD-001"
+        );
+
+        Flight flight = new Flight(
+                "FL-01", "VN101", han, sgn,
+                LocalDateTime.of(2026, 12, 10, 7, 0),
+                LocalDateTime.of(2026, 12, 10, 9, 15),
+                a320, 1_000_000, 4
+        );
+        Seat seat1A = flight.findSeat("1A");
+        Seat seat1B = flight.findSeat("1B");
+        Seat seat1C = flight.findSeat("1C");
+        Seat seat1D = flight.findSeat("1D");
+        seat1A.reserve();
+        seat1B.reserve();
+        seat1C.reserve();
+        seat1D.reserve();
+
+        Booking pendingBooking = new Booking("BK-P", flight, passenger, List.of(seat1A), now);
+        Booking confirmedNoShow = new Booking("BK-C", flight, passenger, List.of(seat1B), now);
+        Payment payConfirm = new Payment("PAY-C", 2_000_000.0, PaymentMethod.CASH);
+        payConfirm.processPayment(amount -> true);
+        confirmedNoShow.confirmBooking(payConfirm);
+
+        Booking cancelledBooking = new Booking("BK-X", flight, passenger, List.of(seat1C), now);
+        cancelledBooking.cancelBooking();
+
+        Booking checkedInBooking = new Booking("BK-CI", flight, passenger, List.of(seat1D), now);
+        Payment payCheckedIn = new Payment("PAY-CI", 2_000_000.0, PaymentMethod.CREDIT_DEBIT_CARD);
+        payCheckedIn.processPayment(amount -> true);
+        checkedInBooking.confirmBooking(payCheckedIn);
+        checkedInBooking.checkIn();
+
+        // Rejected while flight is SCHEDULED, BOARDING, or DEPARTED
+        assertThrows(InvalidStateException.class, checkedInBooking::complete);
+        flight.updateStatus(FlightStatus.BOARDING);
+        assertThrows(InvalidStateException.class, checkedInBooking::complete);
+        flight.updateStatus(FlightStatus.DEPARTED);
+        assertThrows(InvalidStateException.class, checkedInBooking::complete);
+        assertEquals(BookingStatus.CHECKED_IN, checkedInBooking.getStatus());
+
+        // Allowed once flight is ARRIVED for CHECKED_IN booking only
+        flight.updateStatus(FlightStatus.ARRIVED);
+        checkedInBooking.complete();
+        assertEquals(BookingStatus.COMPLETED, checkedInBooking.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, seat1D.getStatus());
+        assertEquals(PaymentStatus.COMPLETED, payCheckedIn.getStatus());
+
+        // Idempotent/re-completion rejected; non-CHECKED_IN states rejected
+        assertThrows(InvalidStateException.class, checkedInBooking::complete);
+        assertThrows(InvalidStateException.class, pendingBooking::complete);
+        assertThrows(InvalidStateException.class, confirmedNoShow::complete);
+        assertThrows(InvalidStateException.class, cancelledBooking::complete);
+        assertEquals(BookingStatus.PENDING, pendingBooking.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, confirmedNoShow.getStatus());
+        assertEquals(BookingStatus.CANCELLED, cancelledBooking.getStatus());
+
+        // Rejected when flight is CANCELLED
+        Flight cancelledFlight = new Flight(
+                "FL-02", "VN102", han, sgn,
+                LocalDateTime.of(2026, 12, 11, 7, 0),
+                LocalDateTime.of(2026, 12, 11, 9, 15),
+                a320, 1_000_000, 4
+        );
+        Seat seat2A = cancelledFlight.findSeat("1A");
+        seat2A.reserve();
+        Booking onCancelledFlight = new Booking("BK-CF", cancelledFlight, passenger, List.of(seat2A), now);
+        Payment payCf = new Payment("PAY-CF", 2_000_000.0, PaymentMethod.CASH);
+        payCf.processPayment(amount -> true);
+        onCancelledFlight.confirmBooking(payCf);
+        onCancelledFlight.checkIn();
+        cancelledFlight.cancel();
+
+        assertThrows(InvalidStateException.class, onCancelledFlight::complete);
+        assertEquals(BookingStatus.CHECKED_IN, onCancelledFlight.getStatus());
+    }
+
+    @Test
+    void cancelsPendingBookingOnFlightArrivalOnlyWhenPendingAndFlightArrived() {
+        Airport han = new Airport("HAN", "Noi Bai", "Hanoi");
+        Airport sgn = new Airport("SGN", "Tan Son Nhat", "Ho Chi Minh City");
+        Aircraft a320 = new Aircraft("AC-320", "A320neo", "Airbus", 10);
+        LocalDateTime now = LocalDateTime.of(2026, 11, 13, 10, 30);
+        Passenger passenger = new Passenger(
+                "PAX-01", "Nguyen Van A", "a@example.com", "0901111111",
+                LocalDate.of(1998, 1, 10), "Male", "CCCD-001"
+        );
+
+        Flight flight = new Flight(
+                "FL-01", "VN101", han, sgn,
+                LocalDateTime.of(2026, 12, 10, 7, 0),
+                LocalDateTime.of(2026, 12, 10, 9, 15),
+                a320, 1_000_000, 4
+        );
+        Seat seat1A = flight.findSeat("1A");
+        Seat seat1B = flight.findSeat("1B");
+        seat1A.reserve();
+        seat1B.reserve();
+
+        Booking pendingBooking = new Booking("BK-P", flight, passenger, List.of(seat1A), now);
+        Booking confirmedBooking = new Booking("BK-C", flight, passenger, List.of(seat1B), now);
+        Payment payment = new Payment("PAY-C", 2_000_000.0, PaymentMethod.CASH);
+        payment.processPayment(amount -> true);
+        confirmedBooking.confirmBooking(payment);
+
+        assertThrows(InvalidStateException.class, pendingBooking::cancelPendingOnArrival);
+        flight.updateStatus(FlightStatus.BOARDING);
+        assertThrows(InvalidStateException.class, pendingBooking::cancelPendingOnArrival);
+        flight.updateStatus(FlightStatus.DEPARTED);
+        assertThrows(InvalidStateException.class, pendingBooking::cancelPendingOnArrival);
+
+        flight.updateStatus(FlightStatus.ARRIVED);
+        assertThrows(InvalidStateException.class, confirmedBooking::cancelPendingOnArrival);
+        pendingBooking.cancelPendingOnArrival();
+
+        assertEquals(BookingStatus.CANCELLED, pendingBooking.getStatus());
+        assertEquals(SeatStatus.AVAILABLE, seat1A.getStatus());
+        assertThrows(InvalidStateException.class, pendingBooking::cancelPendingOnArrival);
+    }
 }

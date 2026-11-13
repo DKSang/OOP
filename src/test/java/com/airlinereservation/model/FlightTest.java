@@ -139,23 +139,36 @@ class FlightTest {
         assertFalse(flight.matches("SGN", "HAN", LocalDate.of(2026, 12, 1)));
         assertFalse(flight.matches("HAN", "SGN", LocalDate.of(2026, 12, 2)));
 
+        assertThrows(ValidationException.class, () -> flight.updateStatus(null));
         assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.DEPARTED));
+        assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.ARRIVED));
         assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.SCHEDULED));
 
         flight.updateStatus(FlightStatus.BOARDING);
         assertEquals(FlightStatus.BOARDING, flight.getStatus());
         assertFalse(flight.matches("HAN", "SGN", LocalDate.of(2026, 12, 1)));
+        assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.ARRIVED));
 
         flight.updateStatus(FlightStatus.DEPARTED);
         assertThrows(InvalidStateException.class, flight::cancel);
+        assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.CANCELLED));
         assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.BOARDING));
 
         flight.updateStatus(FlightStatus.ARRIVED);
         assertEquals(FlightStatus.ARRIVED, flight.getStatus());
+        assertThrows(InvalidStateException.class, flight::cancel);
+        assertThrows(InvalidStateException.class, () -> flight.updateStatus(FlightStatus.DEPARTED));
 
-        Flight cancellable = new Flight("FL-2", "VN102", HAN, SGN, DEP_TIME, ARR_TIME, aircraft, 1_000_000);
-        cancellable.cancel();
-        assertEquals(FlightStatus.CANCELLED, cancellable.getStatus());
-        assertThrows(InvalidStateException.class, () -> cancellable.updateStatus(FlightStatus.BOARDING));
+        Flight cancellableFromScheduled = new Flight("FL-2", "VN102", HAN, SGN, DEP_TIME, ARR_TIME, aircraft, 1_000_000);
+        cancellableFromScheduled.cancel();
+        assertEquals(FlightStatus.CANCELLED, cancellableFromScheduled.getStatus());
+        assertThrows(InvalidStateException.class, cancellableFromScheduled::cancel);
+        assertThrows(InvalidStateException.class, () -> cancellableFromScheduled.updateStatus(FlightStatus.BOARDING));
+
+        Flight cancellableFromBoarding = new Flight("FL-3", "VN103", HAN, SGN, DEP_TIME, ARR_TIME, aircraft, 1_000_000);
+        cancellableFromBoarding.updateStatus(FlightStatus.BOARDING);
+        cancellableFromBoarding.updateStatus(FlightStatus.CANCELLED);
+        assertEquals(FlightStatus.CANCELLED, cancellableFromBoarding.getStatus());
+        assertThrows(InvalidStateException.class, cancellableFromBoarding::cancel);
     }
 }

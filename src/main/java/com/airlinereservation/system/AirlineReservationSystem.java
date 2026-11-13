@@ -1,5 +1,6 @@
 package com.airlinereservation.system;
 
+import com.airlinereservation.enums.BookingStatus;
 import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.DuplicateEntityException;
@@ -210,6 +211,39 @@ public class AirlineReservationSystem {
     public boolean cancelBooking(String bookingId) {
         Booking booking = findBookingById(bookingId);
         return booking.cancelBooking();
+    }
+
+    /**
+     * Cancels a scheduled or boarding flight and cascades cancellation/refund to its open bookings.
+     */
+    public void cancelFlight(String flightId) {
+        Flight flight = findFlightById(flightId);
+        flight.cancel();
+        for (Booking booking : bookings.values()) {
+            if (booking.getFlight() == flight
+                    && (booking.getStatus() == BookingStatus.PENDING
+                    || booking.getStatus() == BookingStatus.CONFIRMED)) {
+                booking.cancelBooking();
+            }
+        }
+    }
+
+    /**
+     * Marks a departed flight as ARRIVED, completing checked-in bookings and expiring pending ones.
+     */
+    public void arriveFlight(String flightId) {
+        Flight flight = findFlightById(flightId);
+        flight.updateStatus(FlightStatus.ARRIVED);
+        for (Booking booking : bookings.values()) {
+            if (booking.getFlight() != flight) {
+                continue;
+            }
+            if (booking.getStatus() == BookingStatus.CHECKED_IN) {
+                booking.complete();
+            } else if (booking.getStatus() == BookingStatus.PENDING) {
+                booking.cancelPendingOnArrival();
+            }
+        }
     }
 
     private Payment executeBookingPayment(Booking booking, PaymentMethod method, PaymentStrategy strategy) {
