@@ -1,25 +1,19 @@
 package com.airlinereservation.gui;
 
 import com.airlinereservation.enums.BookingStatus;
-import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.exception.AirlineReservationException;
 import com.airlinereservation.model.Airport;
 import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Person;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tab;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -31,19 +25,13 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
-import javafx.util.StringConverter;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
-import java.util.function.Function;
 
 /**
  * Role workspace container for authenticated {@code Passenger} sessions.
  */
 public class PassengerWorkspaceView extends AbstractWorkspaceView {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final ComboBox<Airport> departureCombo = new ComboBox<>();
     private final ComboBox<Airport> arrivalCombo = new ComboBox<>();
@@ -160,23 +148,8 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     }
 
     private void configureFlightTable() {
-        flightTable.getStyleClass().add("flight-table");
-        flightTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        flightTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        flightTable.setPlaceholder(ArbitrumTheme.createMutedLabel("No matching flights found."));
-
-        String[] cols = ReservationGuiController.FLIGHT_TABLE_COLUMNS;
-        flightTable.getColumns().setAll(List.of(
-                textColumn(cols[0], Flight::getFlightId, 78, true),
-                textColumn(cols[1], Flight::getFlightNumber, 84, true),
-                textColumn(cols[2], ReservationGuiController::formatRoute, 110, true),
-                textColumn(cols[3], f -> DATE_TIME_FORMATTER.format(f.getDepartureTime()), 140, true),
-                textColumn(cols[4], f -> DATE_TIME_FORMATTER.format(f.getArrivalTime()), 140, true),
-                textColumn(cols[5], f -> f.getAircraft().getModel(), 130, false),
-                textColumn(cols[6], f -> String.valueOf(f.getAvailableSeats().size()), 110, true),
-                textColumn(cols[7], f -> ReservationGuiController.formatCurrency(f.getBasePrice()), 130, true),
-                flightStatusBadgeColumn(cols[8], 125)
-        ));
+        configureExplorerTable(flightTable, "No matching flights found.");
+        flightTable.getColumns().setAll(buildFlightExplorerColumns());
 
         flightTable.setRowFactory(tv -> {
             TableRow<Flight> row = new TableRow<>();
@@ -211,18 +184,7 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         List<Airport> airports = controller.getAirports();
         departureCombo.getItems().setAll(airports);
         arrivalCombo.getItems().setAll(airports);
-        resetAirportSelections();
-    }
-
-    private void resetAirportSelections() {
-        int count = departureCombo.getItems().size();
-        if (count >= 2) {
-            departureCombo.getSelectionModel().select(0);
-            arrivalCombo.getSelectionModel().select(1);
-        } else if (count == 1) {
-            departureCombo.getSelectionModel().select(0);
-            arrivalCombo.getSelectionModel().select(0);
-        }
+        selectDefaultAirportPair(departureCombo, arrivalCombo);
     }
 
     private void executeFlightSearch() {
@@ -249,7 +211,7 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     }
 
     private void resetFiltersAndShowAllScheduled() {
-        resetAirportSelections();
+        selectDefaultAirportPair(departureCombo, arrivalCombo);
         travelDatePicker.setValue(controller.getDefaultTravelDate());
         seatCountField.setText("1");
         populateFlightTable(controller.getScheduledFlights());
@@ -310,10 +272,7 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     }
 
     private void configureBookingTable() {
-        bookingTable.getStyleClass().add("flight-table");
-        bookingTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        bookingTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        bookingTable.setPlaceholder(ArbitrumTheme.createMutedLabel("You have no bookings yet. Reserve seats from Search & Book Flights."));
+        configureExplorerTable(bookingTable, "You have no bookings yet. Reserve seats from Search & Book Flights.");
 
         String[] cols = ReservationGuiController.BOOKING_TABLE_COLUMNS;
         bookingTable.getColumns().setAll(List.of(
@@ -357,20 +316,9 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
             bookingCountLabel.setText("Showing 0 booking(s)");
             return;
         }
-        String selectedId = getSelectedBooking() == null ? null : getSelectedBooking().getBookingId();
         List<Booking> bookings = controller.getPassengerBookings();
-        bookingTable.getItems().setAll(bookings);
-        bookingTable.refresh();
+        refreshTableItems(bookingTable, bookings, Booking::getBookingId);
         bookingCountLabel.setText("Showing " + bookings.size() + " booking(s)");
-
-        if (selectedId != null) {
-            for (Booking booking : bookings) {
-                if (booking.getBookingId().equals(selectedId)) {
-                    bookingTable.getSelectionModel().select(booking);
-                    break;
-                }
-            }
-        }
     }
 
     private void refreshTablesAfterMutation() {
@@ -381,10 +329,6 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
 
     private Booking getSelectedBooking() {
         return bookingTable.getSelectionModel().getSelectedItem();
-    }
-
-    private Window ownerWindow() {
-        return getScene() == null ? null : getScene().getWindow();
     }
 
     private Booking requireSelectedBooking(Window owner, String warningMessage) {
@@ -477,124 +421,5 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         } catch (AirlineReservationException ex) {
             ArbitrumTheme.showError(owner, "Cancellation Failed", ex.getMessage());
         }
-    }
-
-    private static <T> TableColumn<T, String> textColumn(String title,
-                                                         Function<T, String> extractor,
-                                                         double minWidth,
-                                                         boolean monospace) {
-        TableColumn<T, String> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
-        col.setMinWidth(minWidth);
-        col.setCellValueFactory(cell -> new ReadOnlyStringWrapper(extractor.apply(cell.getValue())));
-        if (monospace) {
-            col.setCellFactory(column -> new TableCell<>() {
-                @Override
-                protected void updateItem(String item, boolean empty) {
-                    super.updateItem(item, empty);
-                    getStyleClass().remove("explorer-mono-cell");
-                    if (empty || item == null) {
-                        setText(null);
-                    } else {
-                        setText(item);
-                        getStyleClass().add("explorer-mono-cell");
-                    }
-                }
-            });
-        }
-        return col;
-    }
-
-    private static TableColumn<Flight, FlightStatus> flightStatusBadgeColumn(String title, double minWidth) {
-        return badgeColumn(
-                title,
-                minWidth,
-                Flight::getStatus,
-                Enum::name,
-                status -> switch (status) {
-                    case SCHEDULED -> "badge-status-scheduled";
-                    case BOARDING -> "badge-status-warning";
-                    case CANCELLED -> "badge-status-danger";
-                    case DEPARTED, ARRIVED -> "badge-guest";
-                },
-                false
-        );
-    }
-
-    private static TableColumn<Booking, BookingStatus> bookingStatusBadgeColumn(String title, double minWidth) {
-        return badgeColumn(
-                title,
-                minWidth,
-                Booking::getStatus,
-                Enum::name,
-                status -> switch (status) {
-                    case PENDING -> "badge-status-warning";
-                    case CONFIRMED -> "badge-status-scheduled";
-                    case CHECKED_IN -> "badge-legroom";
-                    case COMPLETED -> "badge-business";
-                    case CANCELLED -> "badge-status-danger";
-                },
-                false
-        );
-    }
-
-    private TableColumn<Booking, PaymentStatus> paymentStatusBadgeColumn(String title, double minWidth) {
-        return badgeColumn(
-                title,
-                minWidth,
-                controller::getBookingPaymentStatus,
-                status -> status == null ? "UNPAID" : status.name(),
-                status -> {
-                    if (status == null) {
-                        return "badge-guest";
-                    }
-                    return switch (status) {
-                        case COMPLETED -> "badge-status-scheduled";
-                        case PENDING -> "badge-status-warning";
-                        case FAILED -> "badge-status-danger";
-                        case REFUNDED -> "badge-business";
-                    };
-                },
-                true
-        );
-    }
-
-    private static <T, S> TableColumn<T, S> badgeColumn(String title,
-                                                        double minWidth,
-                                                        Function<T, S> extractor,
-                                                        Function<S, String> textMapper,
-                                                        Function<S, String> styleMapper,
-                                                        boolean renderNullValue) {
-        TableColumn<T, S> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
-        col.setMinWidth(minWidth);
-        col.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(extractor.apply(cell.getValue())));
-        col.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(S value, boolean empty) {
-                super.updateItem(value, empty);
-                if (empty || (!renderNullValue && value == null)) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    setGraphic(ArbitrumTheme.createBadgeLabel(textMapper.apply(value), styleMapper.apply(value)));
-                    setText(null);
-                }
-            }
-        });
-        return col;
-    }
-
-    private static void configureAirportCombo(ComboBox<Airport> comboBox) {
-        ArbitrumTheme.styleComboBox(comboBox);
-        comboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(Airport airport) {
-                return airport == null ? "" : airport.getAirportCode() + " - " + airport.getCity();
-            }
-
-            @Override
-            public Airport fromString(String string) {
-                return null;
-            }
-        });
     }
 }

@@ -1,9 +1,11 @@
 package com.airlinereservation.gui;
 
+import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.model.Admin;
+import com.airlinereservation.model.Aircraft;
 import com.airlinereservation.model.Airport;
 import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
@@ -17,6 +19,7 @@ import com.airlinereservation.system.AirlineReservationSystem;
 import com.airlinereservation.system.DemoDataSeeder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -40,6 +43,16 @@ public class ReservationGuiController {
     public static final String[] BOOKING_TABLE_COLUMNS = {
             "Booking ID", "Flight No", "Route", "Seats",
             "Total Price", "Booking Status", "Payment Status"
+    };
+
+    public static final String[] ADMIN_BOOKING_TABLE_COLUMNS = {
+            "Booking ID", "Passenger", "Flight No", "Route", "Seats",
+            "Total Price", "Booking Status", "Payment Status"
+    };
+
+    public static final String[] PASSENGER_TABLE_COLUMNS = {
+            "Passenger ID", "Full Name", "Email", "Phone",
+            "Date of Birth", "Gender", "Passport / ID", "Bookings"
     };
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -125,8 +138,103 @@ public class ReservationGuiController {
         return system.getAirports();
     }
 
+    public List<Aircraft> getAircrafts() {
+        return system.getAircrafts();
+    }
+
     public List<Flight> getAllFlights() {
         return system.getFlights();
+    }
+
+    public List<Flight> getAdminFlights() {
+        requireLoggedInAdmin();
+        return system.getFlights();
+    }
+
+    public Flight scheduleFlight(String flightId,
+                                 String flightNumber,
+                                 String departureAirportCode,
+                                 String arrivalAirportCode,
+                                 String departureTimeText,
+                                 String arrivalTimeText,
+                                 String aircraftId,
+                                 String basePriceText) {
+        requireLoggedInAdmin();
+        LocalDateTime departureTime = parseDateTime(departureTimeText, "Departure time");
+        LocalDateTime arrivalTime = parseDateTime(arrivalTimeText, "Arrival time");
+        double basePrice = parsePositiveDouble(basePriceText, "Base price");
+        return scheduleFlight(
+                flightId,
+                flightNumber,
+                departureAirportCode,
+                arrivalAirportCode,
+                departureTime,
+                arrivalTime,
+                aircraftId,
+                basePrice
+        );
+    }
+
+    public Flight scheduleFlight(String flightId,
+                                 String flightNumber,
+                                 String departureAirportCode,
+                                 String arrivalAirportCode,
+                                 LocalDateTime departureTime,
+                                 LocalDateTime arrivalTime,
+                                 String aircraftId,
+                                 double basePrice) {
+        requireLoggedInAdmin();
+        Airport departure = system.findAirportByCode(departureAirportCode);
+        Airport arrival = system.findAirportByCode(arrivalAirportCode);
+        Aircraft aircraft = system.findAircraftById(aircraftId);
+        Flight flight = new Flight(
+                flightId,
+                flightNumber,
+                departure,
+                arrival,
+                departureTime,
+                arrivalTime,
+                aircraft,
+                basePrice
+        );
+        system.addFlight(flight);
+        return flight;
+    }
+
+    public Flight updateFlightStatus(String flightId, FlightStatus targetStatus) {
+        requireLoggedInAdmin();
+        ValidationException.requireNonNull(targetStatus, "Flight status");
+        if (targetStatus == FlightStatus.ARRIVED) {
+            return arriveFlight(flightId);
+        }
+        if (targetStatus == FlightStatus.CANCELLED) {
+            return cancelFlight(flightId);
+        }
+        Flight flight = system.findFlightById(flightId);
+        flight.updateStatus(targetStatus);
+        return flight;
+    }
+
+    public Flight arriveFlight(String flightId) {
+        requireLoggedInAdmin();
+        system.arriveFlight(flightId);
+        return system.findFlightById(flightId);
+    }
+
+    public Flight cancelFlight(String flightId) {
+        requireLoggedInAdmin();
+        system.cancelFlight(flightId);
+        return system.findFlightById(flightId);
+    }
+
+    public List<Booking> getAllBookings() {
+        requireLoggedInAdmin();
+        return system.getBookings();
+    }
+
+    public List<Passenger> getAllPassengers() {
+        requireLoggedInAdmin();
+        return system.getPassengers();
     }
 
     public List<Flight> getScheduledFlights() {
@@ -270,6 +378,13 @@ public class ReservationGuiController {
         return passenger;
     }
 
+    private Admin requireLoggedInAdmin() {
+        if (!(currentUser instanceof Admin admin)) {
+            throw new ValidationException("Admin login is required for this action");
+        }
+        return admin;
+    }
+
     private static LocalDate parseIsoDate(String dateText, String fieldName) {
         String trimmed = ValidationException.requireNonBlank(dateText, fieldName);
         try {
@@ -277,6 +392,26 @@ public class ReservationGuiController {
         } catch (DateTimeParseException ex) {
             throw new ValidationException(fieldName + " must follow YYYY-MM-DD format", ex);
         }
+    }
+
+    private static LocalDateTime parseDateTime(String dateTimeText, String fieldName) {
+        String trimmed = ValidationException.requireNonBlank(dateTimeText, fieldName);
+        try {
+            return LocalDateTime.parse(trimmed, DATE_TIME_FORMATTER);
+        } catch (DateTimeParseException ex) {
+            throw new ValidationException(fieldName + " must follow YYYY-MM-DD HH:MM format", ex);
+        }
+    }
+
+    private static double parsePositiveDouble(String amountText, String fieldName) {
+        String trimmed = ValidationException.requireNonBlank(amountText, fieldName);
+        double parsed;
+        try {
+            parsed = Double.parseDouble(trimmed);
+        } catch (NumberFormatException ex) {
+            throw new ValidationException(fieldName + " must be a positive number", ex);
+        }
+        return ValidationException.requirePositive(parsed, fieldName);
     }
 
     public List<Object[]> toFlightTableRows(List<Flight> flights) {
@@ -311,6 +446,48 @@ public class ReservationGuiController {
                 .toList();
     }
 
+    public List<Object[]> toAdminBookingTableRows(List<Booking> bookings) {
+        ValidationException.requireNonNull(bookings, "Bookings");
+        return bookings.stream()
+                .map(booking -> new Object[]{
+                        booking.getBookingId(),
+                        formatPassengerSummary(booking.getPassenger()),
+                        booking.getFlight().getFlightNumber(),
+                        formatRoute(booking.getFlight()),
+                        formatSeatNumbers(booking),
+                        formatCurrency(booking.getTotalPrice()),
+                        booking.getStatus(),
+                        getBookingPaymentStatus(booking)
+                })
+                .toList();
+    }
+
+    public List<Object[]> toPassengerTableRows(List<Passenger> passengers) {
+        ValidationException.requireNonNull(passengers, "Passengers");
+        return passengers.stream()
+                .map(passenger -> new Object[]{
+                        passenger.getId(),
+                        passenger.getFullName(),
+                        passenger.getEmail(),
+                        passenger.getPhoneNumber(),
+                        DateTimeFormatter.ISO_LOCAL_DATE.format(passenger.getDateOfBirth()),
+                        passenger.getGender(),
+                        passenger.getPassportOrId(),
+                        passenger.getBookingHistory().size()
+                })
+                .toList();
+    }
+
+    public static String formatPassengerSummary(Passenger passenger) {
+        ValidationException.requireNonNull(passenger, "Passenger");
+        return passenger.getId() + " · " + passenger.getFullName();
+    }
+
+    public static String formatDateTime(LocalDateTime dateTime) {
+        ValidationException.requireNonNull(dateTime, "Date time");
+        return DATE_TIME_FORMATTER.format(dateTime);
+    }
+
     public static String formatRoute(Flight flight) {
         ValidationException.requireNonNull(flight, "Flight");
         return flight.getDepartureAirport().getAirportCode()
@@ -336,9 +513,34 @@ public class ReservationGuiController {
         return new PortalMetrics(system.getAirports().size(), scheduled.size(), availableSeats);
     }
 
+    public AdminMetrics getAdminMetrics() {
+        requireLoggedInAdmin();
+        List<Booking> bookings = system.getBookings();
+        double settledRevenue = bookings.stream()
+                .map(Booking::getPayment)
+                .filter(payment -> payment != null && payment.getStatus() == PaymentStatus.COMPLETED)
+                .mapToDouble(Payment::getAmount)
+                .sum();
+        return new AdminMetrics(
+                system.getFlights().size(),
+                bookings.size(),
+                system.getPassengers().size(),
+                settledRevenue
+        );
+    }
+
     /**
      * Live network metrics displayed in the Web3 login showcase panel.
      */
     public record PortalMetrics(int airportsCount, int scheduledFlightsCount, int availableSeatsCount) {
+    }
+
+    /**
+     * Live operations metrics displayed in the Admin system-wide overview panel.
+     */
+    public record AdminMetrics(int totalFlightsCount,
+                               int totalBookingsCount,
+                               int registeredPassengersCount,
+                               double settledRevenue) {
     }
 }

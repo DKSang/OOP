@@ -6,6 +6,7 @@ import com.airlinereservation.exception.InvalidStateException;
 import com.airlinereservation.exception.SeatNotAvailableException;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.model.Admin;
+import com.airlinereservation.model.Aircraft;
 import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Passenger;
@@ -27,6 +28,7 @@ import com.airlinereservation.system.DemoDataSeeder;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -407,5 +409,239 @@ class ReservationGuiControllerTest {
         assertEquals(SeatStatus.AVAILABLE, system.findFlightById("FL-01").findSeat("1B").getStatus());
         assertEquals(PaymentStatus.REFUNDED, paidBooking.getPayment().getStatus());
         assertEquals(PaymentStatus.REFUNDED, controller.getBookingPaymentStatus(paidBooking));
+    }
+
+    @Test
+    void enforcesAdminGuardAndSchedulesFlightsFromCatalogs() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        // Guest and Passenger cannot access admin flight list or schedule flights
+        assertThrows(ValidationException.class, controller::getAdminFlights);
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-04", "VN301", "HAN", "DAD",
+                "2026-12-20 09:00", "2026-12-20 10:20", "AC-320", "1400000"
+        ));
+
+        controller.login("PAX-01", Person.DEFAULT_PASSWORD);
+        assertThrows(ValidationException.class, controller::getAdminFlights);
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-04", "VN301", "HAN", "DAD",
+                LocalDateTime.of(2026, 12, 20, 9, 0),
+                LocalDateTime.of(2026, 12, 20, 10, 20),
+                "AC-320", 1_400_000.0
+        ));
+
+        controller.login("ADM-01", DemoDataSeeder.DEMO_ADMIN_PASSWORD);
+        assertEquals(3, controller.getAdminFlights().size());
+        List<Aircraft> aircrafts = controller.getAircrafts();
+        assertEquals(2, aircrafts.size());
+
+        Flight scheduled = controller.scheduleFlight(
+                "FL-04", "VN301", "HAN", "DAD",
+                "2026-12-20 09:00", "2026-12-20 10:20", "AC-320", "1400000"
+        );
+        assertEquals("FL-04", scheduled.getFlightId());
+        assertEquals("VN301", scheduled.getFlightNumber());
+        assertEquals("HAN -> DAD", ReservationGuiController.formatRoute(scheduled));
+        assertEquals("AC-320", scheduled.getAircraft().getAircraftId());
+        assertEquals(16, scheduled.getAvailableSeats().size());
+        assertEquals(1_400_000.0, scheduled.getBasePrice(), 1e-6);
+        assertEquals(FlightStatus.SCHEDULED, scheduled.getStatus());
+        assertEquals(4, controller.getAdminFlights().size());
+
+        // Validation and duplicate handling
+        assertThrows(DuplicateEntityException.class, () -> controller.scheduleFlight(
+                "FL-04", "VN302", "HAN", "DAD",
+                "2026-12-21 09:00", "2026-12-21 10:20", "AC-320", "1400000"
+        ));
+        assertThrows(EntityNotFoundException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "XXX", "DAD",
+                "2026-12-21 09:00", "2026-12-21 10:20", "AC-320", "1400000"
+        ));
+        assertThrows(EntityNotFoundException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "HAN", "DAD",
+                "2026-12-21 09:00", "2026-12-21 10:20", "AC-404", "1400000"
+        ));
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "HAN", "HAN",
+                "2026-12-21 09:00", "2026-12-21 10:20", "AC-320", "1400000"
+        ));
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "HAN", "DAD",
+                "20-12-2026 09:00", "2026-12-21 10:20", "AC-320", "1400000"
+        ));
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "HAN", "DAD",
+                "2026-12-21 10:20", "2026-12-21 09:00", "AC-320", "1400000"
+        ));
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "HAN", "DAD",
+                "2026-12-21 09:00", "2026-12-21 10:20", "AC-320", "abc"
+        ));
+        assertThrows(ValidationException.class, () -> controller.scheduleFlight(
+                "FL-05", "VN305", "HAN", "DAD",
+                "2026-12-21 09:00", "2026-12-21 10:20", "AC-320", "-100"
+        ));
+    }
+
+    @Test
+    void transitionsFlightStatusesAndCascadesArrivalAndCancellationAcrossBookingsAndPayments() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        // Role guards: guest and passenger are blocked from status mutations
+        assertThrows(ValidationException.class, () -> controller.updateFlightStatus("FL-01", FlightStatus.BOARDING));
+        assertThrows(ValidationException.class, () -> controller.arriveFlight("FL-01"));
+        assertThrows(ValidationException.class, () -> controller.cancelFlight("FL-01"));
+
+        controller.login("PAX-01", Person.DEFAULT_PASSWORD);
+        assertThrows(ValidationException.class, () -> controller.updateFlightStatus("FL-01", FlightStatus.BOARDING));
+        assertThrows(ValidationException.class, () -> controller.arriveFlight("FL-01"));
+        assertThrows(ValidationException.class, () -> controller.cancelFlight("FL-01"));
+
+        // Prepare FL-02 with one CHECKED_IN booking (PAX-02) and one PENDING booking (seeded BK-2 of PAX-01)
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        Booking pax2CheckedIn = controller.bookSeats("FL-02", List.of("1B"));
+        controller.processPayment(pax2CheckedIn.getBookingId(), PaymentMethod.CASH, "CNT-01", "CSH-01", false);
+        controller.checkInBooking(pax2CheckedIn.getBookingId());
+        assertEquals(BookingStatus.CHECKED_IN, pax2CheckedIn.getStatus());
+
+        // Switch to Admin
+        controller.login("ADM-01", DemoDataSeeder.DEMO_ADMIN_PASSWORD);
+
+        // Invalid direct skips fail with InvalidStateException
+        assertThrows(InvalidStateException.class, () -> controller.updateFlightStatus("FL-02", FlightStatus.DEPARTED));
+        assertThrows(InvalidStateException.class, () -> controller.arriveFlight("FL-02"));
+
+        // FL-02: SCHEDULED -> BOARDING -> DEPARTED -> ARRIVED cascade
+        assertEquals(FlightStatus.BOARDING, controller.updateFlightStatus("FL-02", FlightStatus.BOARDING).getStatus());
+        assertEquals(FlightStatus.DEPARTED, controller.updateFlightStatus("FL-02", FlightStatus.DEPARTED).getStatus());
+        assertThrows(InvalidStateException.class, () -> controller.cancelFlight("FL-02"));
+
+        Flight arrivedFl02 = controller.arriveFlight("FL-02");
+        assertEquals(FlightStatus.ARRIVED, arrivedFl02.getStatus());
+        assertEquals(BookingStatus.COMPLETED, pax2CheckedIn.getStatus());
+        assertEquals(PaymentStatus.COMPLETED, controller.getBookingPaymentStatus(pax2CheckedIn));
+
+        Booking pendingBk2 = system.findBookingById("BK-2");
+        assertEquals(BookingStatus.CANCELLED, pendingBk2.getStatus());
+        assertEquals(SeatStatus.AVAILABLE, arrivedFl02.findSeat("2A").getStatus());
+        assertEquals(SeatStatus.AVAILABLE, arrivedFl02.findSeat("2B").getStatus());
+
+        List<Object[]> afterArriveRows = controller.toAdminBookingTableRows(controller.getAllBookings());
+        assertEquals(BookingStatus.CANCELLED, afterArriveRows.get(1)[6]);
+        assertNull(afterArriveRows.get(1)[7]);
+        assertEquals(BookingStatus.COMPLETED, afterArriveRows.get(2)[6]);
+        assertEquals(PaymentStatus.COMPLETED, afterArriveRows.get(2)[7]);
+
+        // FL-01: SCHEDULED -> BOARDING -> CANCELLED cascade refunds BK-1 and releases seat 1A
+        assertEquals(FlightStatus.BOARDING, controller.updateFlightStatus("FL-01", FlightStatus.BOARDING).getStatus());
+        Flight cancelledFl01 = controller.cancelFlight("FL-01");
+        assertEquals(FlightStatus.CANCELLED, cancelledFl01.getStatus());
+
+        Booking bk1 = system.findBookingById("BK-1");
+        assertEquals(BookingStatus.CANCELLED, bk1.getStatus());
+        assertEquals(PaymentStatus.REFUNDED, bk1.getPayment().getStatus());
+        assertEquals(PaymentStatus.REFUNDED, controller.getBookingPaymentStatus(bk1));
+        assertEquals(SeatStatus.AVAILABLE, cancelledFl01.findSeat("1A").getStatus());
+
+        // updateFlightStatus with ARRIVED / CANCELLED also routes through system cascades
+        Flight fl04 = controller.scheduleFlight(
+                "FL-04", "VN304", "HAN", "DAD",
+                "2026-12-20 09:00", "2026-12-20 10:20", "AC-320", "1400000"
+        );
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        Booking fl04Booking = controller.bookSeats(fl04.getFlightId(), List.of("1A"));
+        controller.processPayment(fl04Booking.getBookingId(), PaymentMethod.E_WALLET, "0902", "MoMo", false);
+
+        controller.login("ADM-01", DemoDataSeeder.DEMO_ADMIN_PASSWORD);
+        controller.updateFlightStatus("FL-04", FlightStatus.CANCELLED);
+        assertEquals(FlightStatus.CANCELLED, fl04.getStatus());
+        assertEquals(BookingStatus.CANCELLED, fl04Booking.getStatus());
+        assertEquals(PaymentStatus.REFUNDED, controller.getBookingPaymentStatus(fl04Booking));
+    }
+
+    @Test
+    void projectsSystemWideBookingsPassengersAndAdminMetricsWithRoleGuards() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        // Role guards: guest and passenger cannot query system-wide bookings, passengers, or admin metrics
+        assertThrows(ValidationException.class, controller::getAllBookings);
+        assertThrows(ValidationException.class, controller::getAllPassengers);
+        assertThrows(ValidationException.class, controller::getAdminMetrics);
+
+        controller.login("PAX-01", Person.DEFAULT_PASSWORD);
+        assertThrows(ValidationException.class, controller::getAllBookings);
+        assertThrows(ValidationException.class, controller::getAllPassengers);
+        assertThrows(ValidationException.class, controller::getAdminMetrics);
+
+        // Admin views initial seeded bookings, passengers, and metrics
+        controller.login("ADM-01", DemoDataSeeder.DEMO_ADMIN_PASSWORD);
+        List<Booking> bookings = controller.getAllBookings();
+        List<Passenger> passengers = controller.getAllPassengers();
+        assertEquals(2, bookings.size());
+        assertEquals(2, passengers.size());
+
+        assertEquals(8, ReservationGuiController.ADMIN_BOOKING_TABLE_COLUMNS.length);
+        assertEquals(8, ReservationGuiController.PASSENGER_TABLE_COLUMNS.length);
+
+        List<Object[]> bookingRows = controller.toAdminBookingTableRows(bookings);
+        assertEquals(2, bookingRows.size());
+        Object[] bk1Row = bookingRows.get(0);
+        assertEquals("BK-1", bk1Row[0]);
+        assertEquals("PAX-01 · Nguyen Van An", bk1Row[1]);
+        assertEquals("VN101", bk1Row[2]);
+        assertEquals("HAN -> SGN", bk1Row[3]);
+        assertEquals("1A", bk1Row[4]);
+        assertEquals("3,000,000 VND", bk1Row[5]);
+        assertEquals(BookingStatus.CONFIRMED, bk1Row[6]);
+        assertEquals(PaymentStatus.COMPLETED, bk1Row[7]);
+
+        Object[] bk2Row = bookingRows.get(1);
+        assertEquals("BK-2", bk2Row[0]);
+        assertEquals("PAX-01 · Nguyen Van An", bk2Row[1]);
+        assertEquals(BookingStatus.PENDING, bk2Row[6]);
+        assertNull(bk2Row[7]);
+
+        List<Object[]> passengerRows = controller.toPassengerTableRows(passengers);
+        assertEquals(2, passengerRows.size());
+        Object[] pax1Row = passengerRows.get(0);
+        assertEquals("PAX-01", pax1Row[0]);
+        assertEquals("Nguyen Van An", pax1Row[1]);
+        assertEquals("an.nguyen@airline.vn", pax1Row[2]);
+        assertEquals("0901111111", pax1Row[3]);
+        assertEquals("1998-01-10", pax1Row[4]);
+        assertEquals("Male", pax1Row[5]);
+        assertEquals("CCCD-0001", pax1Row[6]);
+        assertEquals(2, pax1Row[7]);
+
+        Object[] pax2Row = passengerRows.get(1);
+        assertEquals("PAX-02", pax2Row[0]);
+        assertEquals(0, pax2Row[7]);
+
+        ReservationGuiController.AdminMetrics initialMetrics = controller.getAdminMetrics();
+        assertEquals(3, initialMetrics.totalFlightsCount());
+        assertEquals(2, initialMetrics.totalBookingsCount());
+        assertEquals(2, initialMetrics.registeredPassengersCount());
+        assertEquals(3_000_000.0, initialMetrics.settledRevenue(), 1e-6);
+
+        // Cancelling FL-01 cascades to BK-1 -> CANCELLED / REFUNDED and updates revenue metric
+        controller.cancelFlight("FL-01");
+        List<Object[]> afterCancelRows = controller.toAdminBookingTableRows(controller.getAllBookings());
+        assertEquals(BookingStatus.CANCELLED, afterCancelRows.get(0)[6]);
+        assertEquals(PaymentStatus.REFUNDED, afterCancelRows.get(0)[7]);
+        assertEquals(0.0, controller.getAdminMetrics().settledRevenue(), 1e-6);
+
+        // Reset restores seeded state and clears Admin session
+        controller.resetDemoData();
+        assertFalse(controller.isAdminLoggedIn());
+        controller.login("ADM-01", DemoDataSeeder.DEMO_ADMIN_PASSWORD);
+        ReservationGuiController.AdminMetrics resetMetrics = controller.getAdminMetrics();
+        assertEquals(3, resetMetrics.totalFlightsCount());
+        assertEquals(2, resetMetrics.totalBookingsCount());
+        assertEquals(2, resetMetrics.registeredPassengersCount());
+        assertEquals(3_000_000.0, resetMetrics.settledRevenue(), 1e-6);
     }
 }

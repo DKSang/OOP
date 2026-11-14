@@ -812,3 +812,55 @@
 .payment-failure-toggle:selected > .box > .mark {
     -fx-background-color: #FFFFFF;
 }
+
+/* Admin Live Metric Summary Cards (Onchain Standard Stats Section) */
+.admin-stat-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 14px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 14px;
+    -fx-padding: 14px 18px;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.05), 12, 0.0, 0, 3);
+}
+
+.admin-stat-label {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #016BE5;
+}
+
+.admin-stat-value {
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 24px;
+    -fx-text-fill: #05163D;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.35), 10, 0.0, 0, 0);
+}
+
+.btn-danger-pill {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 40px;
+    -fx-border-color: rgba(255, 68, 0, 0.45);
+    -fx-border-width: 1px;
+    -fx-border-radius: 40px;
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #9E2A00;
+    -fx-padding: 9px 20px;
+    -fx-cursor: hand;
+}
+
+.btn-danger-pill:hover {
+    -fx-background-color: #FFE103;
+    -fx-border-color: #05163D;
+    -fx-text-fill: #05163D;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.35), 12, 0.12, 0, 0);
+}
+
+.btn-danger-pill:pressed {
+    -fx-background-color: #FF4400;
+    -fx-border-color: #FF4400;
+    -fx-text-fill: #FFFFFF;
+}
