@@ -1,431 +1,328 @@
-﻿---
-name: Anthropic
+---
+name: Arbitrum
 colors:
-  primary: "#D97757"
-  secondary: "#E3DACC"
-  surface: "#000000"
-  on-surface: "#FAF9F5"
+  primary: "#05163D"
+  secondary: "#016BE5"
+  accent: "#10E1FF"
+  highlight: "#FFE103"
+  surface: "#FFFFFF"
+  surface-alt: "#F2F2F2"
+  on-surface: "#05163D"
 typography:
+  display:
+    fontFamily: FK Screamer
+    fontSize: 128px
+    fontWeight: 500
+  heading:
+    fontFamily: Aeonik
+    fontSize: 36px
+    fontWeight: 500
   body-md:
-    fontFamily: Anthropic Sans
+    fontFamily: Aeonik
+    fontSize: 16px
+    fontWeight: 500
+  mono:
+    fontFamily: Aeonik Fono
     fontSize: 16px
     fontWeight: 400
 rounded:
+  sm: 6px
   md: 8px
+  lg: 10px
+  xl: 16px
+  pill: 40px
 ---
 
-# Design System Inspired by Anthropic
+# Design System Inspired by Arbitrum (`DKSang/ARBITRUM`)
 
 ## 1. Visual Theme & Atmosphere
 
-Anthropic's design system embodies a philosophy of deliberate restraint and intellectual clarity. The visual language prioritizes readability and thoughtful hierarchy through a carefully curated palette of warm earth tones balanced against a crisp, high-contrast neutral foundation. The aesthetic is sophisticated yet approachable, reflecting the organization's commitment to making complex AI research accessible. Typography serves as the primary design driver, with generous spacing and a measured typographic scale creating breathing room for ideas. The interplay between serif and sans-serif typefaces establishes both authority and warmth, while selective accent colors—particularly warm terracotta and sage green—introduce moments of intentional visual interest without overwhelming the content-first approach.
+Arbitrum's design system embodies a high-energy, finance-native Web3 aesthetic that pairs architectural precision with kinetic 3D and motion-driven storytelling. Anchored on a crisp white canvas overlaid with subtle vertical architectural grid lines (`repeating-linear-gradient` at `16.67%` column intervals), the visual language alternates between clean, light-mode editorial clarity (`#FFFFFF` and `#F2F2F2` Stone White) and bold, saturated brand moments—deep navy (`#05163D`), electric blue (`#016BE5`), neon cyan (`#10E1FF`), and high-voltage yellow (`#FFE103`).
+
+Typography drives contrast across scales: ultra-condensed uppercase display headlines in **FK Screamer** create monumental hero moments, geometric **Aeonik** handles section headers and body copy with crisp authority, and monospaced **Aeonik Fono** provides technical eyebrow labels and metadata categorization. Interactive 3D cubes, counter-rotating orbital ecosystem rings, infinite marquees, and pill-shaped glassmorphic CTAs with cyan glow effects bring a tactile, programmable-economy feel to the interface.
 
 **Key Characteristics**
-- High-contrast neutral palette anchored by near-black (`#141413`) and cream (`#FAF9F5`)
-- Warm accent colors used sparingly for interactive and elevated moments
-- Serif-driven typography hierarchy with elegant letterforms
-- Generous whitespace and deliberate breathing room between elements
-- Restrained use of color—accent hues reserved for specific semantic roles
-- Emphasis on legibility and content hierarchy over decorative flourishes
+- **Architectural Grid Canvas:** Full-bleed repeating vertical column lines (`1px` at `rgba(0, 0, 0, 0.08)` every `16.67%`) grounding a `1440px` centered layout container
+- **High-Contrast Brand Palette:** Deep navy (`#05163D`) and pure white (`#FFFFFF`) foundation energized by electric blue (`#016BE5`), neon cyan (`#10E1FF`), and signal yellow (`#FFE103`)
+- **Tri-Font Typographic System:** Condensed display (**FK Screamer**) for monumental uppercase impact, geometric sans (**Aeonik**) for UI and editorial copy, and technical monospace (**Aeonik Fono**) for uppercase eyebrows
+- **Kinetic & 3D Interactions:** Perspective-driven 3D tilt cards (`perspective: 1000px`, `preserve-3d`), interactive 6-face 3D cubes, orbital counter-rotating logo rings, staggered SVG clip-path scan animations, and pause-on-hover infinite marquees
+- **Pill-Shaped Interactive Language:** Rounded pill buttons (`rounded-[40px]` and `rounded-3xl`) with backdrop blur, sliding arrow icons (`group-hover:translate-x-1`), and neon cyan glow shadows (`0 0 14px 0 rgba(16, 225, 255, 0.5)`)
+
+---
 
 ## 2. Color Palette & Roles
 
-### Primary
-- **Primary CTA Background** (`#141413`): Deep charcoal used for high-emphasis call-to-action buttons and interactive elements
-- **Primary CTA Text** (`#FAF9F5`): Off-white cream used for text on dark backgrounds, ensuring accessibility and contrast
+### Primary Brand Colors
+- **Primary Blue 1 / Navy** (`#05163D`): Primary brand foreground, deep structural text, SVG scan paths, and dark gradient anchor
+- **Primary Blue 2 / Arbitrum Blue** (`#016BE5`): Core brand blue used in hero top gradients and primary brand accents
+- **Primary Blue 3 / Neon Cyan** (`#10E1FF`): Interactive focus rings, text selection highlight (`selection:bg-[#10e1ff]`), hover text states, button/icon glow effects, and gradient stops
 
-### Accent Colors
-- **Warm Accent / Success** (`#D97757`): Terracotta-rust tone used for interactive highlights, secondary buttons, and positive actions; most frequent accent color in the system
-- **Earth Accent** (`#C6613F`): Deeper rust-brown used for hover states and elevated interactive elements
-- **Sage Accent** (`#788C5D`): Muted green-gray used for contextual highlights and secondary accent moments
-- **Soft Blush** (`#EBCECE`): Pale mauve used for subtle background fills and gentle visual separation
-- **Cool Accent** (`#6A9BCC`): Muted blue used for informational or secondary contextual states
-- **Mauve Accent** (`#C46686`): Soft purple used for tertiary accent moments and special states
-- **Soft Seafoam** (`#BCD1CA`): Pale blue-green used for tertiary backgrounds and delicate visual separation
+### Accent & Signal Colors
+- **Arbitrum Yellow** (`#FFE103`): High-emphasis hover state fill for jumbo CTA pills (`hover:bg-yellow`) and top stop of the technology gradient (`bg-yellow-blue`)
+- **Arbitrum Orange** (`#FF4400`): Secondary energetic brand accent token (`--orange`)
+- **Arbitrum Green** (`#00E340`): Vibrant neon green brand token (`--green`)
+- **Success Green** (`#47D32F`): Semantic positive/status confirmation token (`--success`)
+- **Destructive** (`oklch(0.577 0.245 27.325)`): Error and destructive state token
 
-### Neutral Scale
-- **Neutral 0** (`#141413`): Primary text, borders, and dark UI elements; deepest neutral
-- **Neutral Very Dark** (`#0F0F0E`): Near-black used sparingly for maximum emphasis
-- **Neutral Black** (`#000000`): Pure black used in specific contexts requiring absolute contrast
-- **Neutral Dark** (`#73726C`): Dark gray for secondary text and muted interactive states
-- **Neutral Medium-Dark** (`#87867F`): Medium-dark gray for tertiary text and disabled states
-- **Neutral Medium** (`#B0AEA5`): Mid-tone gray for subtle borders and secondary backgrounds
-- **Neutral Light** (`#C6C4BA`): Light gray for borders, dividers, and tertiary backgrounds
-- **Neutral Very Light** (`#FAF9F5`): Off-white cream, primary background color and light text on dark
+### Neutral & Surface Scale
+- **Pure White** (`#FFFFFF`): Primary page background (`--background`), card surface (`--card`), sticky header surface on scroll, and active tab pill background
+- **Stone White** (`#F2F2F2`): Secondary section background (`--stone-white`, `--secondary`, `--muted`) used for Stats, Case Studies, Project Cards, and Final CTA sections
+- **Gray Lighter / Border** (`#E7E7E7`): Default border and input stroke color (`--border`, `--input`)
+- **Grey** (`#D6D6D6`): Mid-light neutral divider token (`--grey`)
+- **Gray Dark** (`#272727`): Muted foreground text color (`--muted-foreground`)
+- **Gray Darker** (`#131313`): Near-black neutral token (`--gray-darker`)
+- **Pure Black** (`#000000`): Hero CTA pill background, primary body text utility (`text-black`), and bottom stop of the footer gradient
 
-### Surface & Borders
-- **Primary Surface** (`#FAF9F5`): Default page and card background
-- **Primary Border** (`#C6C4BA`): Default stroke color for outlines and dividers
-- **Secondary Border** (`#B0AEA5`): Subtle borders for secondary separations
-- **Tertiary Surface** (`#E3DACC`): Warm, soft background for elevated or highlighted sections
+### Gradients & Special Surfaces
+- **Hero Gradient:** `linear-gradient(180deg, #016be5 0%, #05163d 100%)` with `xerox_scan.webp` texture overlay and `#05163D` animated SVG vector paths
+- **Yellow-to-Cyan Gradient (`.bg-yellow-blue`):** `linear-gradient(#ffe103 0%, #10e1ff 100%)` used for featured technology callout containers
+- **Footer Gradient (`.bg-footer`):** `linear-gradient(#05163d 0%, #000000 100%)`
+- **Case Study Card Overlay:** `linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)`
+- **Repeating Architectural Grid (`.bg-repeating-lines`):**
+  ```css
+  repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.08) 0px,
+    rgba(0, 0, 0, 0.08) 1px,
+    #ffffff 1px,
+    #ffffff 16.67%
+  )
+  ```
+
+---
 
 ## 3. Typography Rules
 
-### Font Family
-**Primary Serif:** Anthropic Serif (with fallback: Georgia, "Times New Roman", serif)  
-**Primary Sans:** Anthropic Sans (with fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)
+### Font Families
+- **Primary Sans (`--font-sans` / `--font-aeonik`):** `Aeonik` (Regular `400`, Medium `500`), fallback `ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+- **Display Condensed (`--font-screamer`):** `FK Screamer Upright` (Medium `500`), fallback `Aeonik, sans-serif`
+- **Technical Monospace (`--font-mono` / `--font-aeonik-fono`):** `Aeonik Fono` (Regular `400`), fallback `ui-monospace, monospace`
+- **Supplementary Fonts:** `DM Sans` (`--font-dm-sans`), `DM Mono` (`--font-dm-mono`), `Fjalla One` (`--font-fjalla`)
 
 ### Hierarchy
 
-| Role | Font | Size | Weight | Line Height | Letter Spacing | Notes |
-|------|------|------|--------|-------------|----------------|-------|
-| Display / Hero | Anthropic Serif | 104px | 300 | 104px | 0 | Largest heading scale; used for page title hero sections |
-| Heading 1 | Anthropic Serif | 60px | 400 | 67px | 0 | Major section headings with elegant weight |
-| Heading 1 Bold | Anthropic Sans | 60px | 700 | 67px | 0 | Bold variant for emphasis within large headings |
-| Heading 2 | Anthropic Serif | 60px | 400 | 67px | 0 | Alternative large heading |
-| Heading 3 | Anthropic Sans | 24px | 600 | 31px | 0 | Section subheadings and card titles |
-| Heading 3 Small | Anthropic Sans | 12px | 700 | 17px | 0 | Small caps-style headings and labels |
-| Body Large | Anthropic Serif | 24px | 400 | 34px | 0 | Primary body text with serif elegance |
-| Body / List | Anthropic Serif | 20px | 400 | 28px | 0 | Standard list items and secondary body copy |
-| Body Standard | Anthropic Sans | 17px | 400 | 26px | 0 | Main paragraph text; alternative sans-serif body |
-| Link / CTA Text | Anthropic Serif | 18px | 600 | 25px | 0 | Emphasized links with serif authority |
-| Link Compact | Anthropic Serif | 16px | 700 | 20px | 0 | Smaller emphasized links |
-| Navigation | Anthropic Serif | 20px | 400 | 28px | 0 | Primary navigation text |
-| Navigation Small | Anthropic Serif | 16px | 400 | 20px | 0 | Secondary navigation or compact menus |
-| Button | Anthropic Sans | 16px | 400 | 16px | 0 | Default button label text |
-| Button Large | Anthropic Serif | 20px | 400 | 28px | 0 | Large button labels with serif treatment |
-| Caption | Anthropic Sans | 12px | 400 | 17px | 0 | Small captions, footnotes, helper text |
-| Label | Anthropic Sans | 12px | 400 | 15px | 0 | Form labels and small identifiers |
-| Small Text | Anthropic Sans | 12px | 500 | 17px | 0 | Emphasized small text |
+| Role | Font | Size | Weight | Line Height | Case / Tracking | Notes |
+|------|------|------|--------|-------------|-----------------|-------|
+| Hero Display (H1) | FK Screamer | `128px` (`lg:text-9xl`), `96px` (`md:text-8xl`), `60px` (`text-6xl`) | 500 | `0.9` (`lg:!leading-[0.9]`) / `1.0` | `uppercase` | Monumental hero headline in white |
+| Scene Panel Title | FK Screamer | `36px` (`text-4xl`) | 700 (`font-bold`) | `1.0` (`leading-none`) | Title Case | 3D tilt card headings |
+| Section Heading (H2) | Aeonik | `36px` (`text-4xl`) | 500 (`font-medium`) | `0.95` (`.leading-extra-tight`) or `1.0` (`leading-none`) | Title Case | Primary section headers in `#05163D` |
+| Jumbo CTA Pill Text | Aeonik | `36px` (`text-4xl`) | 500 (`font-medium`) | `1.1` | Title Case | Full-width stacked CTAs in FinalCTA |
+| Feature / Stat Value | Aeonik | `24px` (`text-2xl`) | 500–600 | `0.95` (`.leading-extra-tight`) | Normal | Stat values use `font-semibold` + `.text-shadow-blue` |
+| Subheading / Lead | Aeonik | `18px–20px` (`text-lg` to `text-xl`) | 500 | `1.375` (`leading-snug`) | Normal | Hero lead, stats intro, ecosystem ring copy |
+| Eyebrow / Tag | Aeonik Fono | `14px–16px` (`text-sm` to `text-base`) | 400 | `1.5` | `uppercase` | Section category labels (`CASE STUDIES`, `A FLEXIBLE PLATFORM`) |
+| Body Standard | Aeonik | `16px` (`text-base` / `text-md`) | 500 | `1.5` | Normal | Standard descriptions (often `opacity-60` or `opacity-80`) |
+| Card Description / UI | Aeonik | `14px` (`text-sm`) | 500–600 | `1.4` | Normal | Project card copy (`opacity-60`), pill button labels (`font-semibold`) |
+| Navigation / Footer Link | Aeonik | `12px–14px` (`text-xs` to `text-sm`) | 500–600 | `1.4` | `uppercase` (`tracking-wide`) | Header dropdowns and footer directory links |
+| Micro Label | Aeonik | `10px` (`text-[10px]`) | 500 | `1.2` | Normal | Orbital ring logo labels |
 
 ### Principles
-- **Serif for Authority:** Anthropic Serif used for primary headings, navigation, and body copy to establish intellectual credibility
-- **Sans for Clarity:** Anthropic Sans used for UI controls, labels, and secondary content for functional clarity
-- **Generous Line Height:** All text maintains line heights between 120–150% for comfortable reading
-- **Weight Hierarchy:** Bold weights (600–700) reserve for headings, labels, and emphasized text; 400 weight for body content
-- **Elegant Contrast:** Size and weight are primary differentiators; color contrast is secondary to hierarchy
+- **Contrast via Condensed Display vs. Geometric Sans:** Pair ultra-tight `FK Screamer` (`line-height: 0.9–1.0`) for high-impact headlines with wide, geometric `Aeonik` for scannable headings and body text.
+- **Monospace Category Anchors:** Always precede major feature sections with an uppercase `Aeonik Fono` eyebrow (`mb-2 font-aeonik-fono text-base uppercase text-primary-blue-1`).
+- **Opacity-Driven Hierarchy:** Instead of introducing extra gray hex tokens for body copy, use `#05163D` or `#000000` with `opacity-80` for primary descriptions and `opacity-60` for secondary card descriptions.
+
+---
 
 ## 4. Component Stylings
 
-### Buttons
+### Buttons & CTAs
 
-#### Primary Button (Dark)
-- **Background:** `#141413`
-- **Text Color:** `#FAF9F5`
-- **Font:** Anthropic Sans, 16px, weight 400
-- **Padding:** `8px 16px`
-- **Border Radius:** `8px`
-- **Border:** `1px solid #141413`
-- **Line Height:** 16px
-- **Height:** 36px
-- **Hover State:** Background `#0F0F0E`, text `#FAF9F5`
-- **Active State:** Background `#000000`
-- **Disabled State:** Opacity 50%, cursor not-allowed
+#### Hero Primary Pill (Dark)
+- **Background:** `#000000` (`bg-black`)
+- **Text Color:** `#FFFFFF` (`text-white`), `14px` (`text-sm`) mobile / `16px` (`lg:text-base`) desktop
+- **Dimensions:** `h-10` (`40px`), `w-full` on mobile, `lg:w-[200px] xl:w-[250px]` on desktop
+- **Border Radius:** `24px` (`rounded-3xl`)
+- **Hover State:** Text shifts to `#10E1FF` (`hover:text-primary-blue-3`) with cyan outer glow (`hover:shadow-button-glow`: `0 0 14px 0 rgba(16, 225, 255, 0.5)`)
 
-#### Secondary Button (Serif, No Background)
-- **Background:** `rgba(0, 0, 0, 0)` (transparent)
-- **Text Color:** `#141413`
-- **Font:** Anthropic Serif, 20px, weight 400
-- **Padding:** `0px`
-- **Border Radius:** `0px`
-- **Border:** None
-- **Line Height:** 28px
-- **Height:** 68px
-- **Hover State:** Text opacity 75%
-- **Active State:** Text opacity 50%
+#### Outlined Glass Pill Button (Standard Section CTA)
+- **Background:** Transparent with `backdrop-blur`
+- **Border:** `1px solid rgba(5, 22, 61, 0.2)` (`border-primary-blue-1/20`) or `border-black/10`
+- **Text Color:** `#05163D` (`text-primary-blue-1`) or `#000000`, `14px` (`text-sm`), `font-semibold`
+- **Padding:** `8px 20px` (`px-5 py-2`), `gap-2` (`8px`)
+- **Border Radius:** `40px` (`rounded-[40px]`)
+- **Trailing Icon:** `24px × 24px` right arrow (`/arrow_right.svg`) that slides right on hover (`group-hover:translate-x-1`) and gains `group-hover:shadow-button-glow`
 
-#### Ghost Button (Light Background)
-- **Background:** `rgba(0, 0, 0, 0)` (transparent, light context)
-- **Text Color:** `#FAF9F5`
-- **Font:** Anthropic Sans, 16px, weight 400
-- **Padding:** `0px`
-- **Border Radius:** `8px`
-- **Border:** None
-- **Line Height:** 16px
-- **Height:** 100%
-- **Hover State:** Background `rgba(250, 249, 245, 0.15)`
-- **Active State:** Background `rgba(250, 249, 245, 0.25)`
+#### Jumbo Action Pill (Final CTA)
+- **Background:** Transparent default, `#FFE103` (`hover:bg-yellow`) on hover
+- **Border:** `1px solid rgba(5, 22, 61, 0.2)` (`border-primary-blue-1/20`)
+- **Text Color:** `#000000` (`text-black`), `36px` (`text-4xl`), `font-medium`
+- **Padding:** `40px 16px` (`px-4 py-10`)
+- **Border Radius:** `40px` (`rounded-[40px]`)
+- **Hover Interaction:** Background fills with `#FFE103`, hidden `48px × 48px` arrow fades in and shifts right (`group-hover:translate-x-1 group-hover:opacity-100`)
 
-#### Tertiary Button (Small Label)
-- **Background:** `rgba(0, 0, 0, 0)`
-- **Text Color:** `#FAF9F5`
-- **Font:** Anthropic Sans, 15px, weight 400
-- **Padding:** `0px`
-- **Border Radius:** `0px`
-- **Border:** None
-- **Line Height:** 15px
-- **Hover State:** Opacity 75%
-
-#### CTA Link Button
-- **Background:** `#FAF9F5`
-- **Text Color:** `#141413`
-- **Font:** Anthropic Serif, 18px, weight 600
-- **Padding:** `12px 31px`
-- **Border Radius:** `0px 0px 8px 8px`
-- **Border:** None
-- **Line Height:** 25px
-- **Height:** 49px
-- **Hover State:** Background `#E3DACC`, text `#141413`
-- **Active State:** Background `#C6C4BA`
+#### Base UI / Shadcn Button Primitive (`src/components/ui/button.tsx`)
+- **Base:** `rounded-lg text-sm font-medium transition-all`, focus ring `focus-visible:ring-3 focus-visible:ring-ring/50` (`#10E1FF`)
+- **Sizes:** `xs` (`h-6 px-2 text-xs`), `sm` (`h-7 px-2.5 text-[0.8rem]`), `default` (`h-8 px-2.5`), `lg` (`h-9 px-2.5`), `icon` (`size-8`)
+- **Variants:** `default` (`bg-primary text-primary-foreground`), `outline`, `secondary`, `ghost`, `destructive`, `link`
 
 ### Cards & Containers
 
-#### Card (Light Background)
-- **Background:** `#FAF9F5`
-- **Border:** `1px solid #C6C4BA`
-- **Border Radius:** `8px`
-- **Padding:** `24px` to `48px`
-- **Box Shadow:** Small elevation (see Depth & Elevation)
-- **Hover State:** Border color `#B0AEA5`, shadow slightly increased
+#### 3D Tilt Scene Card (`ScenePanels`)
+- **Wrapper:** `perspective: 1000px` (`.hero-card-wrapper`)
+- **Surface:** `rgba(255, 255, 255, 0.70)` (`bg-white/70`)
+- **Dimensions:** `max-w-[360px]`, `h-full`, `p-4` (`16px`), `gap-10` (`40px`)
+- **Border Radius:** `12px` (`rounded-[12px]`)
+- **Media:** `327px` tall image (`rounded-lg object-fill`)
+- **Interaction:** Pointer-driven 3D tilt (`rotateY(px * 10deg) rotateX(-py * 10deg)`) with `transition: transform 0.3s`
 
-#### Elevated Section (Dark)
-- **Background:** `#141413`
-- **Text Color:** `#FAF9F5`
-- **Border Radius:** `16px`
-- **Padding:** `48px` to `64px`
-- **Box Shadow:** None (solid background provides depth)
+#### Case Study Marquee Card (`CaseStudies`)
+- **Dimensions:** `315px × 280px` (`w-[315px] h-[280px]`), `shrink-0`, `mx-3`
+- **Border Radius:** `16px` (`rounded-2xl`)
+- **Border:** `1px solid transparent`, shifts to `rgba(0, 0, 0, 0.4)` (`hover:border-black/40`) on hover
+- **Overlay & Media:** Full-bleed cover image (`group-hover:scale-105 duration-500`) + bottom dark gradient (`from-black/80 via-black/20 to-transparent`) + bottom-left white title (`p-5 text-base font-medium text-white`)
+- **Hover Elevation:** `box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14)` (`.shadow-card-hover`)
 
-#### Subtle Section (Warm Accent)
-- **Background:** `#E3DACC`
-- **Text Color:** `#141413`
-- **Border Radius:** `0px`
-- **Padding:** `32px` to `48px`
-- **Box Shadow:** None
+#### Ecosystem Project Card (`EcosystemTabs`)
+- **Surface:** `#F2F2F2` (`bg-stone-white`)
+- **Dimensions:** `min-h-[320px]`, `w-full`, `p-6` (`24px`), `gap-14` (`56px`)
+- **Border Radius:** `16px` (`rounded-2xl`)
+- **Header Row:** `48px × 48px` project logo (`rounded-lg`) on left + `Learn More` link with `32px × 32px` arrow on right
+- **Footer Block:** Project title (`text-lg` / `18px`) + 2–3 line description (`text-sm opacity-60`)
 
-### Inputs & Forms
+#### Featured Gradient Banner (`TechSection`)
+- **Surface:** `.bg-yellow-blue` (`linear-gradient(#ffe103 0%, #10e1ff 100%)`)
+- **Border Radius:** `20px` (`rounded-[1.25rem]`)
+- **Padding:** `pt-20 pb-[340px] px-4` on mobile, `lg:px-20 lg:py-60` on desktop
+- **Decor:** 14絕對-positioned isometric `lego_cube.webp` (`220px × 288px`) arranged in a staircase on the left (`hover:mix-blend-soft-light`), content aligned to the right `40%` (`max-w-[540px]`)
 
-#### Text Input
-- **Background:** `#FAF9F5`
-- **Border:** `1px solid #C6C4BA`
-- **Text Color:** `#141413`
-- **Font:** Anthropic Sans, 17px, weight 400
-- **Padding:** `12px 16px`
-- **Border Radius:** `8px`
-- **Line Height:** 26px
-- **Height:** 40px
-- **Focus State:** Border `1px solid #D97757`, outline none
-- **Disabled State:** Background `#C6C4BA`, text `#87867F`, opacity 50%
-- **Label:** Anthropic Sans, 12px, weight 400, color `#141413`
+### Navigation & Tabs
 
-#### Form Label
-- **Font:** Anthropic Sans, 12px, weight 400
-- **Color:** `#141413`
-- **Margin Bottom:** `8px`
-- **Line Height:** 15px
+#### Sticky Header (`Header`)
+- **Layout:** `sticky top-0 z-20`, `px-5 py-4` (`~70px` height)
+- **Scroll Behavior:** Transparent on desktop at scroll `0` (`lg:bg-transparent`), transitions (`duration-300 cubic-bezier(0.4,0,0.2,1)`) to solid `#FFFFFF` with `shadow-[0_1px_2px_rgba(0,0,0,0.05)]` when scrolled
+- **Brand Logo Interaction:** Default inverted black mark (`icon_white.svg` with `invert`); on hover, crossfades (`duration-300`) to full-color mark (`logo_color.svg`) and reveals the 8-letter SVG wordmark (`arbitrum`)
+- **Nav Triggers:** 5 uppercase dropdown buttons (`SOLUTIONS`, `PRODUCTS`, `WHY ARBITRUM`, `DEVELOPERS`, `RESOURCES`) with rotating `▾` indicator (`rotate-180`)
+- **Dropdown Panel:** Centered below trigger (`lg:left-1/2 lg:top-[38px] lg:-translate-x-1/2 lg:z-30`), white card (`bg-white py-2 px-2 rounded-lg`), shadow `0 4px 20px rgba(0,0,0,0.08)`, links in uppercase `#05163D/70` → `#05163D` on hover
 
-#### Checkbox / Radio
-- **Size:** 20px × 20px
-- **Border:** `1px solid #B0AEA5`
-- **Border Radius:** Checkbox 4px, Radio 50%
-- **Background (Unchecked):** `#FAF9F5`
-- **Background (Checked):** `#D97757`
-- **Checkmark Color:** `#FAF9F5`
+#### Segmented Tab Bar (`EcosystemTabs`)
+- **Container:** `max-w-[480px]`, `rounded-lg bg-muted` (`#F2F2F2`), `p-1` (`4px`)
+- **Tab Trigger:** `h-11` (`44px`), `flex-1`, `rounded-md`, `text-sm font-medium`
+- **Active State:** `bg-white text-primary-blue-1 shadow-sm`
+- **Inactive State:** `text-primary-blue-1/60 hover:text-primary-blue-1`
 
-### Navigation
+#### Footer Newsletter Form (`Footer`)
+- **Input:** `rounded-md border border-white/20 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-primary-blue-3`
+- **Submit Button:** `rounded-md bg-white px-4 py-2 text-sm font-semibold uppercase text-primary-blue-1 hover:bg-primary-blue-3`
 
-#### Header Navigation
-- **Background:** `#FAF9F5`
-- **Text Color:** `#141413`
-- **Font:** Anthropic Serif, 20px, weight 400
-- **Padding:** `16px 24px`
-- **Line Height:** 28px
-- **Link Hover State:** Text color `#D97757`, text-decoration underline
-- **Link Active State:** Color `#C6613F`, text-decoration underline
-
-#### Primary Navigation Link
-- **Font:** Anthropic Serif, 16px, weight 400
-- **Color:** `#141413`
-- **Text Decoration:** None, underline on hover
-- **Hover State:** Color `#D97757`
-- **Active State:** Color `#C6613F`, text-decoration underline
-
-#### Dropdown Menu
-- **Background:** `#FAF9F5`
-- **Border:** `1px solid #C6C4BA`
-- **Border Radius:** `0px 0px 8px 8px`
-- **Box Shadow:** `rgba(0, 0, 0, 0.01) 0px 2px 2px 0px, rgba(0, 0, 0, 0.02) 0px 4px 4px 0px, rgba(0, 0, 0, 0.04) 0px 16px 24px 0px`
-- **Padding:** `8px 0px`
-- **Z-index:** 10
-
-#### Breadcrumb Navigation
-- **Font:** Anthropic Sans, 12px, weight 400
-- **Color:** `#B0AEA5`
-- **Separator:** `/` with margin `0px 8px`
-- **Current Item:** Color `#141413`, weight 500
-
-### Badges
-
-#### Primary Badge
-- **Background:** `#D97757`
-- **Text Color:** `#FAF9F5`
-- **Font:** Anthropic Sans, 12px, weight 600
-- **Padding:** `4px 12px`
-- **Border Radius:** `4px`
-- **Line Height:** 17px
-
-#### Secondary Badge
-- **Background:** `#E3DACC`
-- **Text Color:** `#141413`
-- **Font:** Anthropic Sans, 12px, weight 600
-- **Padding:** `4px 12px`
-- **Border Radius:** `4px`
-- **Line Height:** 17px
-
-#### Neutral Badge
-- **Background:** `#C6C4BA`
-- **Text Color:** `#141413`
-- **Font:** Anthropic Sans, 12px, weight 500
-- **Padding:** `4px 12px`
-- **Border Radius:** `4px`
-- **Line Height:** 17px
+---
 
 ## 5. Layout Principles
 
-### Spacing System
+### Page Topology & Grid System
+- **Root Wrapper:** `<main class="bg-repeating-lines">` > `<div class="m-auto flex max-w-[1440px] flex-col">`
+- **Content Max-Widths:**
+  - `1440px`: Outer page frame and orbital ring diameter
+  - `1280px`: 2-column feature grids (`FlexiblePlatform`) and 4-column project card grids (`EcosystemTabs`)
+  - `1000px`: Final CTA button stack
+  - `720px` / `670px` / `620px`: Centered section lead paragraphs and hero subtitle
+- **Column Patterns:**
+  - **1-Column Stacked:** Hero, Stats rows (`grid-rows-3`), ReadyToBuild
+  - **2-Column Split:** FlexiblePlatform (`lg:grid-cols-2 gap-20`), FinalCTA (`lg:flex-row gap-20`)
+  - **3-Column Grid:** ScenePanels (`md:grid-cols-3 gap-16 lg:gap-[6vw]`)
+  - **4-Column Grid:** EcosystemTabs project cards (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10`)
+  - **7-Column Directory:** Footer navigation (`grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-8`)
 
-The design system uses an 8px base unit with a flexible scale that supports both compact and generous layouts:
-
-- **8px:** Minimal gap, tight component pairing, icon spacing
-- **12px:** Tight padding for form inputs and small components
-- **16px:** Standard gap between components, input/label spacing
-- **20px:** Comfortable margin between sections, list spacing
-- **24px:** Standard padding for cards, containers, and moderate sections
-- **32px:** Generous gap between major content blocks
-- **48px:** Substantial padding for elevated sections, hero padding
-- **60px:** Large margin for section separation
-- **64px:** Generous padding for major container sections
-- **76px:** Extra-large spacing for hero section top/bottom
-- **180px:** Maximum hero section padding for full-screen hero blocks
-
-### Grid & Container
-
-- **Max Width:** 1200px for primary content containers
-- **Column Strategy:** 12-column responsive grid for desktop layouts, collapsing to single column on mobile
-- **Gutters:** 16px to 24px depending on context and breakpoint
-- **Section Patterns:** Full-width sections with internal max-width constraints; alternating background colors for visual rhythm
-
-### Whitespace Philosophy
-
-Whitespace is treated as a primary design element, creating rhythm and enabling content breathing room. Generous padding (48px–64px) between major sections prevents visual fatigue, while tighter spacing (8px–16px) at the component level maintains functional clarity. Asymmetrical whitespace is avoided in favor of consistent, predictable spacing that reflects the system's intellectual approach.
+### Spacing Scale
+- **Component Micro-Gaps:** `4px` (`p-1`), `8px` (`gap-2`), `12px` (`gap-3`), `16px` (`p-4`, `px-4`)
+- **Card & Grid Gaps:** `24px` (`gap-6`, `p-6`), `40px` (`gap-10`), `64px` (`gap-16`), `80px` (`gap-20`)
+- **Section Vertical Padding:**
+  - Standard major sections: `120px` (`py-30`)
+  - Hero container: `p-5 pt-0`, height `736px` mobile / `calc(100vh - 84px)` desktop
+  - Large callout sections: `py-20` (`80px`) to `lg:py-60` (`240px`)
 
 ### Border Radius Scale
+- **Micro (`4px`–`6px`):** Arrow wrappers (`rounded-[4px]`), tab buttons (`rounded-md`), footer inputs
+- **Standard (`8px`–`12px`):** Base buttons (`rounded-lg`), project logo tiles, 3D tilt scene cards (`rounded-[12px]`)
+- **Large Cards (`16px`–`20px`):** Case study cards, ecosystem project cards (`rounded-2xl`), tech section container (`rounded-[1.25rem]`)
+- **Hero Frame (`30px`):** Main hero inner container (`rounded-[30px]`)
+- **Full Pill (`24px`–`40px`):** Hero CTA buttons (`rounded-3xl`), section & jumbo CTA pills (`rounded-[40px]`)
 
-- **0px:** Hard corners for primary text, navigation, and clean geometric elements
-- **4px:** Micro-radius for small components like badges and minor form elements
-- **8px:** Primary radius for buttons, inputs, and standard interactive components
-- **16px:** Generous radius for elevated containers, hero sections, and special components
+---
 
-### Border Widths
+## 6. Depth, Elevation & Motion
 
-- **Thin:** `1px` used for all standard borders, dividers, input fields, and button strokes
-- **Medium:** `2px` used for emphasis borders and selected states (if needed)
+### Shadow & Glow Tokens
 
-## 6. Depth & Elevation
+| Token / Class | Value | Usage |
+|---------------|-------|-------|
+| Sticky Header Shadow | `0 1px 2px rgba(0, 0, 0, 0.05)` | Subtle bottom edge when page is scrolled |
+| Dropdown Shadow | `0 4px 20px rgba(0, 0, 0, 0.08)` | Header navigation popover menus |
+| Card Hover (`.shadow-card-hover`) | `0 12px 40px rgba(0, 0, 0, 0.14)` | Case study cards on hover |
+| 3D Cube Shadow (`.drop-shadow-cube`) | `drop-shadow(0 52px 26px rgba(0, 0, 0, 0.2))` | Interactive 3D cube in FinalCTA |
+| Cyan Button Glow (`.shadow-button-glow`) | `0 0 14px 0 rgba(16, 225, 255, 0.5)` | Primary pills and arrow badges on hover |
+| Social Hex Glow | `drop-shadow(0 0 6px rgba(16, 225, 255, 0.6))` | Header and footer social icons on hover |
+| Stat Cyan Text Glow (`.text-shadow-blue`) | `0 0 12px rgba(16, 225, 255, 0.45)` | Highlighted metric numbers in Stats section |
 
-| Level | Treatment | Use |
-|-------|-----------|-----|
-| Base | No shadow | Body text, backgrounds, standard page elements |
-| Hover | `rgba(0, 0, 0, 0.01) 0px 2px 2px 0px, rgba(0, 0, 0, 0.02) 0px 4px 4px 0px, rgba(0, 0, 0, 0.04) 0px 16px 24px 0px` | Dropdowns, cards on hover, floating elements |
-| Elevated | Solid background color (`#141413` or `#FAF9F5`) | Modal overlays, header sections, raised containers |
-| Fixed | Background with border + shadow | Sticky headers, floating toolbars |
+### Signature Motion & Interactive Behaviors
+- **Easing Curve:** Standard transitions use `cubic-bezier(0.4, 0, 0.2, 1)` over `300ms` (`duration-300`).
+- **Hero Staggered Scan (`.hero-path`):** 7 diagonal SVG paths animate via `hero-scan` (`clip-path: inset(0 100% 0 0)` → `inset(0 0 0 0)`) over `1.2s cubic-bezier(0.4, 0, 0.2, 1)` with `0.08s` stagger increments (`0s` to `0.48s`).
+- **Counter-Rotating Orbital Rings (`EcosystemRing`):** Outer ring (`1440px`, radius `720px`, 11 logos, `80s` CW) and inner ring (`620px`, radius `310px`, 5 logos, `60s` CCW) rotate via `requestAnimationFrame` while each child logo counter-rotates (`rotate(-a deg)`) to stay upright.
+- **Infinite Marquee (`.animate-marquee`):** `translateX(0)` to `translateX(-50%)` over `30s linear infinite`, pausing on container hover (`.marquee-container:hover`).
+- **Interactive 3D Cube (`Cube3D`):** 6-face CSS 3D cube (`320px × 320px`, `HALF = 160px`, initial rotation `x: -35deg, y: 45deg`) supporting pointer capture drag rotation.
 
-**Shadow Philosophy:** The system employs a single, refined shadow scale based on a layered opacity approach. Shadows are subtle and rarely applied, preferring solid backgrounds and borders for depth definition. When shadows are used, they should suggest slight elevation rather than dramatic floating; the soft blur radius and multiple layers create a sophisticated, non-distracting effect. Transparency values (1%, 2%, 4%) build composite shadows without overwhelming the page.
+### Z-Index Scale
+- **Base Flow:** `0` / `auto`
+- **Raised Interactive Panels (`ScenePanels`, `TechSection` cubes on hover):** `z-[1]`
+- **Mobile Menu Toggle:** `z-10`
+- **Sticky Header:** `z-20`
+- **Header Dropdown Menus:** `z-30`
 
-### Opacity Levels
-
-- **1% (`0.01`):** Extremely subtle hover or disabled states
-- **34% (`0.34`):** Secondary or muted interactive elements
-- **50% (`0.50`):** Disabled elements, inactive states, secondary text
-
-### Z-index / Layering
-
-- **Base:** `1` (default document flow)
-- **Raised Content:** `2` (cards, slightly elevated sections)
-- **Overlay Content:** `3` (semi-transparent overlays, light backgrounds)
-- **Fixed Navigation:** `5` (fixed/sticky headers, always above content)
-- **Dropdown:** `10` (dropdown menus, contextual popups)
-- **Sticky Elements:** `101` (sticky headers, floating toolbars)
-- **Modal:** `1000` (modal dialogs, major overlays)
-- **Toast/Alert:** `9999` (notifications, highest priority alerts)
+---
 
 ## 7. Do's and Don'ts
 
 ### Do
-
-- **Use serif fonts for primary headings and navigation** to establish intellectual authority and elegance
-- **Reserve accent colors for interactive elements and calls-to-action** to guide user attention without visual noise
-- **Maintain generous whitespace around major content blocks** (48px–64px padding) for breathing room and emphasis
-- **Apply subtle borders (`1px`) instead of shadows** for depth and visual separation in most contexts
-- **Use the neutral scale (`#141413` for text, `#FAF9F5` for backgrounds)** as the foundation; accent colors are punctuation, not the baseline
-- **Group related form inputs with 16px gaps** and use clear label hierarchy with 12px sans-serif labels
-- **Implement the small shadow only on interactive hover states** and dropdowns to create micro-feedback
-- **Ensure all text meets WCAG AA contrast minimums** (4.5:1 for body, 3:1 for large text)
-- **Use consistent padding scales** (multiples of 8px) across all components for predictable layouts
-- **Combine serif and sans thoughtfully:** Serif for meaning-making content, sans for UI and functional text
+- **Use the repeating vertical line background (`.bg-repeating-lines`)** on the `<main>` wrapper to preserve Arbitrum's signature architectural grid rhythm.
+- **Alternate white (`#FFFFFF`) and Stone White (`#F2F2F2`) sections** to create clear visual pacing without heavy horizontal borders.
+- **Pair `Aeonik Fono` uppercase eyebrows** with `Aeonik` (`36px`, `font-medium`, `leading-extra-tight`) for all standard section headers.
+- **Reserve `FK Screamer` for uppercase hero headlines and 3D scene cards** where condensed vertical punch is required.
+- **Include the sliding arrow interaction (`group-hover:translate-x-1`) and cyan glow (`group-hover:shadow-button-glow`)** on all pill-shaped directional links.
+- **Keep text selection styled in neon cyan (`selection:bg-[#10e1ff]`)** across the document body.
 
 ### Don't
+- **Don't use static drop shadows on resting cards**; cards sit flat on `#F2F2F2` or `#FFFFFF` and only elevate on hover (`.shadow-card-hover`).
+- **Don't use `FK Screamer` for body copy, navigation, or long-form text**—its ultra-condensed proportions are strictly for display impact.
+- **Don't introduce arbitrary border radii for buttons**; stick to `rounded-[40px]` / `rounded-3xl` for marketing pills and `rounded-md` / `rounded-lg` for compact UI controls and tabs.
+- **Don't forget to counter-rotate items** inside rotating orbital rings, or logos and labels will turn upside down.
+- **Don't use inline styles for layout or static theming**; reserve inline `style` attributes strictly for dynamic coordinates (e.g., 3D transforms, orbital trigonometry, and staircase cube positions).
 
-- **Don't use multiple accent colors in a single section** without clear semantic distinction
-- **Don't apply shadows to static content or non-interactive elements**
-- **Don't mix serif and sans fonts within a single text block** or heading
-- **Don't reduce whitespace below 16px between major sections** to maintain visual rhythm
-- **Don't use pure black (`#000000`) for primary text**; use `#141413` for softer on-screen rendering
-- **Don't apply border radius greater than 16px** unless creating explicit soft, rounded visual metaphors
-- **Don't stack more than 2–3 font sizes or weights** in a single heading for clarity
-- **Don't apply opacity-based disabled states without also reducing saturation** or changing color slightly
-- **Don't use accent colors as background fills** for large areas; reserve them for buttons, badges, and interactive accents
-- **Don't create custom button styles outside the defined set**; enforce consistency through the system
+---
 
 ## 8. Responsive Behavior
 
 ### Breakpoints
 
-| Breakpoint | Width | Key Changes |
-|------------|-------|-------------|
-| Mobile | 320px–767px | Single column, 16px gutters, stack navigation, reduce padding to 24px, font sizes reduce by 10–15%, full-width cards, touch targets 44px minimum |
-| Tablet | 768px–1023px | Two-column grid, 20px gutters, 32px padding, larger font sizes, modal navigation menus, optimized spacing |
-| Desktop | 1024px–1199px | 12-column grid, 24px gutters, 48px+ padding, full navigation bar, card layouts enabled, optimized for mouse/keyboard |
-| Wide | 1200px+ | Max-width 1200px container, generous 48px–64px padding, full featured layouts, optimized for large screens |
+| Breakpoint | Width | Key Layout & Component Changes |
+|------------|-------|--------------------------------|
+| Mobile (`default` / `<640px`) | `320px–639px` | Single-column stacks; header is solid `#FFFFFF` with hamburger menu (`top-[62px] h-[calc(100vh-62px)]`); Hero height fixed at `736px` (`h-mobile-hero`) with `text-6xl` H1 and full-width CTAs; 3D cube scales to `scale-75`; `TechSection` hides scattered lego cubes (`max-sm:hidden`) and adds bottom padding (`pb-[340px]`) |
+| Small / Tablet (`sm:` `640px+`, `md:` `768px+`) | `640px–1023px` | `EcosystemTabs` shifts to 2 columns (`sm:grid-cols-2`); `ScenePanels` shifts to 3 columns (`md:grid-cols-3`); Hero H1 scales to `md:text-8xl`; Footer expands to 4 columns (`md:grid-cols-4`) and reveals the full-width `all_on_arbitrum.svg` banner |
+| Desktop (`lg:` `1024px+`) | `1024px–1439px` | Header becomes transparent at top (`lg:bg-transparent`) with inline horizontal nav and centered popovers; Hero height becomes `lg:h-[calc(100vh-84px)]` with `lg:text-9xl` H1; `FlexiblePlatform` splits into 2 columns (`lg:grid-cols-2`); `EcosystemTabs` expands to 4 columns (`lg:grid-cols-4`); `FinalCta` aligns horizontally (`lg:flex-row`); Footer expands to 7 columns (`lg:grid-cols-7`) |
+| Wide (`xl:` `1280px+` / `1440px`) | `1280px+` | Outer container caps at `max-w-[1440px]`; Hero CTA buttons widen to `xl:w-[250px]`; Stat value rows scale height dynamically (`xl:h-[5vw]`) |
 
-### Touch Targets
+### Touch & Mobile Adaptations
+- **Navigation Drawer:** Full-viewport overlay (`h-[calc(100vh-62px)] overflow-auto bg-white`) with accordion-style vertical expansion for the 5 nav groups and bottom-pinned social icons.
+- **Overflow Protection:** `.page-wrapper` enforces `overflow-hidden` so `1440px` orbital rings and infinite marquees never cause horizontal page scroll on mobile viewports.
 
-- **Minimum Touch Target:** 44px × 44px for all interactive elements on touch devices
-- **Recommended Touch Target:** 48px × 48px for primary interactive elements
-- **Spacing Between Targets:** Minimum 8px of clearance between interactive elements to prevent accidental activation
-- **Button Padding:** Increase padding to 12px 24px on mobile devices to meet touch minimums
-
-### Collapsing Strategy
-
-- **Navigation:** Collapse primary navigation into hamburger menu below 768px; maintain dropdown structure in mobile menu
-- **Spacing:** Reduce section padding from 64px to 48px below 768px; reduce to 24px below 480px
-- **Typography:** Reduce display heading from 104px to 72px on tablet, 48px on mobile; reduce body from 24px to 18px on mobile
-- **Grid Layout:** Shift from 12-column to 6-column on tablet, single column on mobile; maintain consistent gutter ratio
-- **Cards:** Stack card elements vertically; use full width on mobile with reduced padding
-- **Hero Sections:** Reduce hero padding from 180px to 120px on tablet, 60px on mobile; adjust heading size accordingly
-- **Whitespace:** Reduce gaps systematically: 32px gaps become 20px, 24px gaps become 16px, maintaining hierarchical relationships
+---
 
 ## 9. Agent Prompt Guide
 
 ### Quick Color Reference
+- **Primary Brand Navy (Text & Dark Surfaces):** `#05163D` (`--primary-blue-1` / `text-primary-blue-1`)
+- **Primary Brand Blue (Hero Gradient Top):** `#016BE5` (`--primary-blue-2` / `bg-arb-blue`)
+- **Neon Cyan Accent (Glows, Focus, Selection):** `#10E1FF` (`--primary-blue-3` / `text-primary-blue-3`)
+- **High-Voltage Yellow (Jumbo CTA Hover & Tech Gradient):** `#FFE103` (`--yellow` / `bg-yellow`)
+- **Page Background:** `#FFFFFF` with `.bg-repeating-lines`
+- **Secondary Section & Card Surface:** `#F2F2F2` (`--stone-white` / `bg-stone-white`)
+- **Default Border / Divider:** `#E7E7E7` (`--border`) or `rgba(5, 22, 61, 0.1–0.2)`
 
-- **Primary CTA Background:** Dark Near-Black (`#141413`)
-- **Primary CTA Text:** Cream Off-White (`#FAF9F5`)
-- **Primary Accent / Highlight:** Terracotta-Rust (`#D97757`)
-- **Secondary Accent:** Earth Brown (`#C6613F`)
-- **Tertiary Accent:** Sage Green (`#788C5D`)
-- **Body Text:** Deep Charcoal (`#141413`)
-- **Secondary Text:** Medium Gray (`#B0AEA5`)
-- **Disabled / Muted Text:** Dark Gray (`#87867F`)
-- **Borders:** Light Gray (`#C6C4BA`)
-- **Subtle Background Fill:** Warm Cream (`#E3DACC`)
-- **Page Background:** Cream Off-White (`#FAF9F5`)
-
-### Iteration Guide
-
-1. **Font Foundation:** All body text uses Anthropic Serif 20–24px for primary content; navigation uses Anthropic Serif 16–20px; UI labels use Anthropic Sans 12–16px. Headings layer serif at 60px+ with weight 300–400 for elegance.
-
-2. **Color Discipline:** Use `#141413` for text and `#FAF9F5` for backgrounds as baseline. Accent colors (`#D97757`, `#C6613F`, `#788C5D`) are reserved for interactive elements, buttons, and intentional visual hierarchy—never as primary backgrounds or text.
-
-3. **Spacing Consistency:** All padding uses 8px multiples (8, 12, 16, 20, 24, 32, 48, 64px). All gaps between sections use 20px minimum; section containers use 48px–64px padding. Never use asymmetrical padding unless intentional.
-
-4. **Border & Shadow Minimalism:** Use `1px` borders (`#C6C4BA` or `#B0AEA5`) for all standard dividers and input fields. Apply the soft shadow only to dropdowns and hover card states; static elements use borders, not shadows.
-
-5. **Interactive Component Variants:** Primary buttons are dark (`#141413` background, `#FAF9F5` text); secondary buttons are transparent serif text; tertiary buttons are small sans-serif labels. All buttons use 8px border-radius except decorative serif buttons which use 0px radius.
-
-6. **Form & Input Treatment:** Text inputs use `#FAF9F5` background with `1px #C6C4BA` border, `1px` focus state in `#D97757`. Labels are Anthropic Sans 12px, `#141413`, positioned above inputs with 8px margin-bottom.
-
-7. **Navigation Strategy:** Primary navigation uses Anthropic Serif 16–20px, dark text on light background; links underline and shift to `#D97757` on hover. Dropdowns are light background with small shadow, positioned below trigger element at z-index 10.
-
-8. **Responsive Collapsing:** Reduce padding by 25% on tablet (768px), another 25% on mobile (480px). Font sizes reduce 10–15% on tablet, 20–25% on mobile. Navigation converts to hamburger menu below 768px. Maintain 44px minimum touch targets throughout.
-
-9. **Elevation & Hierarchy:** Use solid backgrounds (`#141413`, `#FAF9F5`, `#E3DACC`) for depth, not shadows. Modals and overlays sit at z-index 1000+. Fixed/sticky headers sit at z-index 101. Dropdowns at z-index 10. Content separation achieved through whitespace, borders, and background color shifts.
+### Iteration & Implementation Guide
+1. **Page Shell Setup:** Wrap the page in `<main className="bg-repeating-lines"><div className="m-auto flex max-w-[1440px] flex-col">`. Keep `.page-wrapper` set to `overflow-hidden`.
+2. **Header Pattern:** Implement a `sticky top-0 z-20` header that listens to `window.scrollY > 0` to toggle `lg:bg-white lg:shadow-[0_1px_2px_rgba(0,0,0,0.05)]`. Include the dual-layer logo crossfade on `group-hover`.
+3. **Hero Construction:** Use a `rounded-[30px]` container with `bg-[linear-gradient(180deg,#016be5_0%,#05163d_100%)]`, layered with a texture image, staggered `.hero-path` SVG scan lines, `font-screamer uppercase` headline (`text-6xl md:text-8xl lg:text-9xl lg:!leading-[0.9]`), and black `rounded-3xl` pill CTAs with `hover:text-primary-blue-3 hover:shadow-button-glow`.
+4. **Section Rhythm:** Alternate open grid sections (transparent over `.bg-repeating-lines`, `py-30`) with full-width `#F2F2F2` (`bg-stone-white py-30`) sections.
+5. **Section Headers:** Always stack:
+   - Eyebrow: `<p className="mb-2 font-aeonik-fono text-base uppercase text-primary-blue-1">`
+   - Title: `<h2 className="mb-6 text-4xl font-medium leading-extra-tight text-primary-blue-1">`
+   - Subtitle: `<p className="m-auto max-w-[670px] text-md opacity-60">`
+6. **Pill CTA Links:** Use `group inline-flex items-center justify-center gap-2 rounded-[40px] border border-primary-blue-1/20 px-5 py-2 text-sm font-semibold text-primary-blue-1 backdrop-blur transition-all` with a trailing `24px` arrow inside `<span className="h-6 w-6 transition-transform group-hover:translate-x-1 group-hover:shadow-button-glow">`.
+7. **Footer Construction:** Use `.bg-footer` (`linear-gradient(#05163d 0%, #000000 100%)`), uppercase white typography, a 7-column responsive link grid (`lg:grid-cols-7`), cyan hover states (`hover:text-primary-blue-3`), and a full-width bottom brand SVG banner.
