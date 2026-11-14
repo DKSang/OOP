@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
 
 /**
  * Shared role-workspace shell providing a themed header banner and tabbed container.
@@ -30,14 +31,12 @@ abstract class AbstractWorkspacePanel extends JPanel {
         setLayout(new BorderLayout(AnthropicTheme.SPACE_16, AnthropicTheme.SPACE_16));
         setBorder(AnthropicTheme.spacing(AnthropicTheme.SPACE_24, AnthropicTheme.SPACE_24));
 
-        JPanel banner = new JPanel();
-        banner.setLayout(new BoxLayout(banner, BoxLayout.Y_AXIS));
+        JPanel banner = new JPanel(new GridLayout(0, 1, 0, AnthropicTheme.SPACE_8));
         AnthropicTheme.styleSubtlePanel(banner);
 
         welcomeLabel = AnthropicTheme.createHeadingLabel(defaultTitle, 22);
         JLabel noteLabel = AnthropicTheme.createMutedLabel(subtitle);
         banner.add(welcomeLabel);
-        banner.add(Box.createVerticalStrut(AnthropicTheme.SPACE_8));
         banner.add(noteLabel);
 
         tabs = new JTabbedPane();

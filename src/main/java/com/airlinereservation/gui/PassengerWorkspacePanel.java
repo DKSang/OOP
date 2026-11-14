@@ -284,7 +284,8 @@ public class PassengerWorkspacePanel extends AbstractWorkspacePanel {
                                                           boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Airport airport) {
-                    setText(airport.getAirportCode() + " - " + airport.getCity() + " (" + airport.getAirportName() + ")");
+                    setText(airport.getAirportCode() + " - " + airport.getCity());
+                    setToolTipText(airport.getAirportName());
                 }
                 return this;
             }

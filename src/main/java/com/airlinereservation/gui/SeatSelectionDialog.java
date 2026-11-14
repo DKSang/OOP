@@ -18,6 +18,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -59,31 +60,27 @@ public class SeatSelectionDialog extends JDialog {
         root.setBorder(AnthropicTheme.spacing(AnthropicTheme.SPACE_24, AnthropicTheme.SPACE_24));
 
         // Header + legend
-        JPanel headerPanel = new JPanel();
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+        JPanel headerPanel = new JPanel(new BorderLayout(0, AnthropicTheme.SPACE_12));
         headerPanel.setBackground(AnthropicTheme.PRIMARY_SURFACE);
+
+        JPanel titleBlock = new JPanel(new GridLayout(0, 1, 0, AnthropicTheme.SPACE_8));
+        titleBlock.setBackground(AnthropicTheme.PRIMARY_SURFACE);
 
         JLabel heading = AnthropicTheme.createHeadingLabel(
                 "Cabin Seat Map - " + flight.getFlightNumber(), 22
         );
-        heading.setAlignmentX(LEFT_ALIGNMENT);
-
         JLabel routeInfo = AnthropicTheme.createMutedLabel(
                 flight.getDepartureAirport().getAirportCode()
                         + " -> " + flight.getArrivalAirport().getAirportCode()
                         + "  |  Aircraft: " + flight.getAircraft().getModel()
                         + "  |  Base Fare: " + ReservationGuiController.formatCurrency(flight.getBasePrice())
         );
-        routeInfo.setAlignmentX(LEFT_ALIGNMENT);
 
-        JPanel legendRow = buildLegendRow();
-        legendRow.setAlignmentX(LEFT_ALIGNMENT);
+        titleBlock.add(heading);
+        titleBlock.add(routeInfo);
 
-        headerPanel.add(heading);
-        headerPanel.add(Box.createVerticalStrut(AnthropicTheme.SPACE_8));
-        headerPanel.add(routeInfo);
-        headerPanel.add(Box.createVerticalStrut(AnthropicTheme.SPACE_12));
-        headerPanel.add(legendRow);
+        headerPanel.add(titleBlock, BorderLayout.NORTH);
+        headerPanel.add(buildLegendRow(), BorderLayout.CENTER);
 
         // Seat Grid
         JPanel seatGrid = new JPanel(new GridLayout(0, CABIN_COLUMNS, AnthropicTheme.SPACE_12, AnthropicTheme.SPACE_12));
@@ -164,29 +161,33 @@ public class SeatSelectionDialog extends JDialog {
 
     private JToggleButton createSeatToggleButton(Seat seat) {
         SeatPresentation presentation = describeSeat(seat);
-        JToggleButton button = new JToggleButton(presentation.buttonHtml());
-        button.setFont(AnthropicTheme.sansFont(Font.PLAIN, 12));
+        JToggleButton button = new JToggleButton();
+        button.setLayout(new BorderLayout());
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setFocusPainted(false);
         button.setPreferredSize(new Dimension(145, 76));
         button.setToolTipText(presentation.tooltip());
 
+        JLabel tileLabel = new JLabel(presentation.buttonHtml(), SwingConstants.CENTER);
+        tileLabel.setFont(AnthropicTheme.sansFont(Font.PLAIN, 12));
+        button.add(tileLabel, BorderLayout.CENTER);
+
         if (!seat.isAvailable()) {
             button.setEnabled(false);
-            applySeatTileStyle(button, seat, presentation, false);
+            applySeatTileStyle(button, tileLabel, seat, presentation, false);
             return button;
         }
 
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        applySeatTileStyle(button, seat, presentation, false);
+        applySeatTileStyle(button, tileLabel, seat, presentation, false);
         button.addItemListener(e -> {
             if (button.isSelected()) {
                 selectedSeatNumbers.add(seat.getSeatNumber());
             } else {
                 selectedSeatNumbers.remove(seat.getSeatNumber());
             }
-            applySeatTileStyle(button, seat, presentation, button.isSelected());
+            applySeatTileStyle(button, tileLabel, seat, presentation, button.isSelected());
             updateSelectionSummary();
         });
         return button;
@@ -221,11 +222,9 @@ public class SeatSelectionDialog extends JDialog {
         }
 
         String statusOrPrice = seat.isAvailable() ? priceText : seat.getStatus().name();
-        String colorPrefix = seat.isAvailable() ? "" : "<font color='#73726C'>";
-        String colorSuffix = seat.isAvailable() ? "" : "</font>";
-        String html = "<html><center>" + colorPrefix + "<b>" + seat.getSeatNumber() + "</b><br>"
+        String html = "<html><center><b>" + seat.getSeatNumber() + "</b><br>"
                 + tierLine + "<br>"
-                + statusOrPrice + colorSuffix + "</center></html>";
+                + statusOrPrice + "</center></html>";
 
         String tooltip = seat.getSeatNumber() + " (" + seat.getSeatType() + ", " + seat.getStatus() + ") - "
                 + priceText + " | " + tooltipDetail;
@@ -234,6 +233,7 @@ public class SeatSelectionDialog extends JDialog {
     }
 
     private void applySeatTileStyle(JToggleButton button,
+                                    JLabel tileLabel,
                                     Seat seat,
                                     SeatPresentation presentation,
                                     boolean selected) {
@@ -242,20 +242,20 @@ public class SeatSelectionDialog extends JDialog {
                     ? AnthropicTheme.SOFT_BLUSH
                     : AnthropicTheme.PRIMARY_BORDER;
             button.setBackground(disabledBg);
-            button.setForeground(AnthropicTheme.NEUTRAL_DARK);
+            tileLabel.setForeground(AnthropicTheme.NEUTRAL_DARK);
             button.setBorder(BorderFactory.createLineBorder(AnthropicTheme.SECONDARY_BORDER, 1));
             return;
         }
 
         if (selected) {
             button.setBackground(AnthropicTheme.WARM_ACCENT);
-            button.setForeground(AnthropicTheme.PRIMARY_CTA_TEXT);
+            tileLabel.setForeground(AnthropicTheme.PRIMARY_CTA_TEXT);
             button.setBorder(BorderFactory.createLineBorder(AnthropicTheme.EARTH_ACCENT, 2));
             return;
         }
 
         button.setBackground(presentation.baseBg());
-        button.setForeground(AnthropicTheme.PRIMARY_TEXT);
+        tileLabel.setForeground(AnthropicTheme.PRIMARY_TEXT);
         button.setBorder(BorderFactory.createLineBorder(presentation.baseBorder(), 1));
     }
 
