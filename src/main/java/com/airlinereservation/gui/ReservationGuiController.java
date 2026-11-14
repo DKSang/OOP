@@ -206,4 +206,18 @@ public class ReservationGuiController {
     public static String formatCurrency(double amount) {
         return String.format(Locale.US, "%,.0f VND", amount);
     }
+
+    public PortalMetrics getPortalMetrics() {
+        List<Flight> scheduled = getScheduledFlights();
+        int availableSeats = scheduled.stream()
+                .mapToInt(flight -> flight.getAvailableSeats().size())
+                .sum();
+        return new PortalMetrics(system.getAirports().size(), scheduled.size(), availableSeats);
+    }
+
+    /**
+     * Live network metrics displayed in the Web3 login showcase panel.
+     */
+    public record PortalMetrics(int airportsCount, int scheduledFlightsCount, int availableSeatsCount) {
+    }
 }

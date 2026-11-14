@@ -9,8 +9,10 @@ import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
+import java.util.Locale;
+
 /**
- * Shared role-workspace shell providing a themed header banner and tab container.
+ * Shared role-workspace shell providing an Arbitrum Hero Gradient banner and segmented pill tabs.
  */
 abstract class AbstractWorkspaceView extends BorderPane {
 
@@ -20,20 +22,23 @@ abstract class AbstractWorkspaceView extends BorderPane {
     private final String defaultTitle;
 
     protected AbstractWorkspaceView(ReservationGuiController controller,
+                                    String eyebrow,
                                     String defaultTitle,
                                     String subtitle) {
         this.controller = controller;
         this.defaultTitle = defaultTitle;
 
-        setPadding(new Insets(AnthropicTheme.SPACE_24));
+        setPadding(new Insets(ArbitrumTheme.SPACE_24, ArbitrumTheme.SPACE_32, ArbitrumTheme.SPACE_24, ArbitrumTheme.SPACE_32));
 
-        welcomeLabel = AnthropicTheme.createHeadingLabel(defaultTitle, "heading-lg");
-        Label noteLabel = AnthropicTheme.createMutedLabel(subtitle);
-        noteLabel.setWrapText(true);
+        Label eyebrowLabel = ArbitrumTheme.createCyanEyebrowLabel(eyebrow);
+        welcomeLabel = ArbitrumTheme.createDisplayTitle(defaultTitle, "display-lg");
+        welcomeLabel.setWrapText(true);
 
-        VBox banner = new VBox(AnthropicTheme.SPACE_8, welcomeLabel, noteLabel);
-        banner.getStyleClass().add("subtle-panel");
-        BorderPane.setMargin(banner, new Insets(0, 0, AnthropicTheme.SPACE_16, 0));
+        Label noteLabel = ArbitrumTheme.createHeroSubtitle(subtitle);
+
+        VBox banner = new VBox(ArbitrumTheme.SPACE_8, eyebrowLabel, welcomeLabel, noteLabel);
+        banner.getStyleClass().add("hero-banner");
+        BorderPane.setMargin(banner, new Insets(0, 0, ArbitrumTheme.SPACE_24, 0));
 
         tabs.getStyleClass().add("workspace-tabs");
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
@@ -44,20 +49,24 @@ abstract class AbstractWorkspaceView extends BorderPane {
 
     public void refreshData() {
         Person user = controller.getCurrentUser();
-        welcomeLabel.setText(user != null ? formatWelcomeTitle(user) : defaultTitle);
+        String title = user != null ? formatWelcomeTitle(user) : defaultTitle;
+        welcomeLabel.setText(title.toUpperCase(Locale.ROOT));
     }
 
     protected abstract String formatWelcomeTitle(Person user);
 
-    protected static Tab createPlaceholderTab(String tabTitle, String heading, String description) {
-        VBox card = new VBox(AnthropicTheme.SPACE_8,
-                AnthropicTheme.createSectionLabel(heading),
-                AnthropicTheme.createMutedLabel(description));
+    protected static Tab createPlaceholderTab(String tabTitle, String eyebrow, String heading, String description) {
+        VBox card = new VBox(
+                ArbitrumTheme.SPACE_8,
+                ArbitrumTheme.createEyebrowLabel(eyebrow),
+                ArbitrumTheme.createHeadingLabel(heading, "heading-md"),
+                ArbitrumTheme.createMutedLabel(description)
+        );
         card.getStyleClass().add("card");
         card.setMaxHeight(Double.MAX_VALUE);
 
         VBox wrapper = new VBox(card);
-        wrapper.setPadding(new Insets(AnthropicTheme.SPACE_8, 0, 0, 0));
+        wrapper.setPadding(new Insets(ArbitrumTheme.SPACE_8, 0, 0, 0));
         return createNonClosableTab(tabTitle, wrapper);
     }
 

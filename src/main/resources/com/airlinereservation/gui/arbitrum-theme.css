@@ -1,0 +1,737 @@
+/*
+ * Arbitrum-inspired Web3 SPA design system for Pure JavaFX 25 views (aligned with DESIGN.md).
+ *
+ * Color tokens:
+ * - Primary Navy:        #05163D
+ * - Arbitrum Blue:       #016BE5
+ * - Neon Cyan:           #10E1FF
+ * - High-Voltage Yellow: #FFE103
+ * - Arbitrum Orange:     #FF4400
+ * - Success Green:       #47D32F / #00E340
+ * - Pure White:          #FFFFFF
+ * - Stone White:         #F2F2F2
+ * - Gray Dark:           #272727
+ * - Border Gray:         #E7E7E7
+ */
+
+.root {
+    -fx-font-family: "Aeonik", "Aeonik Medium", "Segoe UI", "Roboto", sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #05163D;
+}
+
+.page-frame {
+    -fx-background-color: #FFFFFF;
+}
+
+.page-scroller {
+    -fx-background-color: #FFFFFF;
+    -fx-background: #FFFFFF;
+    -fx-border-color: transparent;
+}
+
+.page-scroller > .viewport {
+    -fx-background-color: #FFFFFF;
+}
+
+/* Architectural Vertical Grid Background (6-column motif at 1440px) */
+.bg-repeating-lines {
+    -fx-background-color:
+            #FFFFFF,
+            linear-gradient(
+                    from 0% 0% to 16.6667% 0%,
+                    repeat,
+                    rgba(0, 0, 0, 0.08) 0px,
+                    rgba(0, 0, 0, 0.08) 1px,
+                    transparent 1px,
+                    transparent 100%
+            );
+}
+
+/* Typography */
+.display-screamer {
+    -fx-font-family: "FK Screamer Legacy Trial Upright", "FK Screamer Legacy Trial", "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-text-fill: #FFFFFF;
+}
+
+.display-xl {
+    -fx-font-size: 56px;
+}
+
+.display-lg {
+    -fx-font-size: 38px;
+}
+
+.display-md {
+    -fx-font-size: 28px;
+}
+
+.heading-aeonik {
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-text-fill: #05163D;
+}
+
+.heading-xl {
+    -fx-font-size: 30px;
+}
+
+.heading-lg {
+    -fx-font-size: 22px;
+}
+
+.heading-md {
+    -fx-font-size: 18px;
+}
+
+.eyebrow-mono {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #016BE5;
+}
+
+.eyebrow-mono-cyan {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #10E1FF;
+}
+
+.section-label {
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 16px;
+    -fx-text-fill: #05163D;
+}
+
+.field-label {
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 12px;
+    -fx-text-fill: #05163D;
+}
+
+.muted-label {
+    -fx-font-family: "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: #272727;
+}
+
+.mono-value {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 13px;
+    -fx-text-fill: #05163D;
+}
+
+/* Sticky Web3 Top Navbar */
+.web3-navbar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent #E7E7E7 transparent;
+    -fx-border-width: 1px;
+    -fx-padding: 12px 24px;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.06), 10, 0.0, 0, 2);
+}
+
+.navbar-wordmark {
+    -fx-font-family: "FK Screamer Legacy Trial Upright", "FK Screamer Legacy Trial", "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 24px;
+    -fx-text-fill: #05163D;
+}
+
+.navbar-context {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #272727;
+    -fx-background-color: #F2F2F2;
+    -fx-background-radius: 999px;
+    -fx-padding: 4px 12px;
+}
+
+.navbar-divider {
+    -fx-background-color: #E7E7E7;
+    -fx-pref-width: 1px;
+    -fx-min-width: 1px;
+    -fx-max-width: 1px;
+    -fx-pref-height: 22px;
+}
+
+/* Hero Banners & Surfaces */
+.hero-banner {
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #016BE5 0%, #05163D 100%);
+    -fx-background-radius: 24px;
+    -fx-padding: 28px 32px;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.16), 24, 0.0, 0, 8);
+}
+
+.hero-subtitle {
+    -fx-font-family: "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: rgba(255, 255, 255, 0.86);
+}
+
+.metric-tile {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+    -fx-background-radius: 14px;
+    -fx-border-color: rgba(16, 225, 255, 0.30);
+    -fx-border-width: 1px;
+    -fx-border-radius: 14px;
+    -fx-padding: 14px 16px;
+}
+
+.metric-value {
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 24px;
+    -fx-text-fill: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.45), 12, 0.0, 0, 0);
+}
+
+.metric-label {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #10E1FF;
+}
+
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 16px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-padding: 24px;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.06), 18, 0.0, 0, 4);
+}
+
+.card-stone {
+    -fx-background-color: #F2F2F2;
+    -fx-background-insets: 0;
+    -fx-background-radius: 16px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-padding: 20px 24px;
+}
+
+.fare-summary-bar {
+    -fx-background-color:
+            linear-gradient(from 0% 0% to 100% 0%, #FFE103 0%, #10E1FF 100%),
+            #F2F2F2;
+    -fx-background-insets: 0, 4 0 0 0;
+    -fx-background-radius: 16px, 0 0 16px 16px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 0 1px 1px 1px;
+    -fx-border-radius: 16px;
+    -fx-padding: 18px 24px;
+}
+
+/* Pill CTA Buttons */
+.btn-primary {
+    -fx-background-color: #000000;
+    -fx-background-insets: 0;
+    -fx-background-radius: 24px;
+    -fx-border-color: #000000;
+    -fx-border-width: 1px;
+    -fx-border-radius: 24px;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-padding: 10px 22px;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #05163D;
+    -fx-border-color: #10E1FF;
+    -fx-text-fill: #10E1FF;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.55), 14, 0.2, 0, 0);
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #016BE5;
+    -fx-text-fill: #FFFFFF;
+}
+
+.btn-primary:disabled {
+    -fx-opacity: 0.45;
+}
+
+.btn-secondary {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 40px;
+    -fx-border-color: rgba(5, 22, 61, 0.22);
+    -fx-border-width: 1px;
+    -fx-border-radius: 40px;
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #05163D;
+    -fx-padding: 9px 20px;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #FFE103;
+    -fx-border-color: #05163D;
+    -fx-text-fill: #05163D;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.30), 10, 0.1, 0, 0);
+}
+
+.btn-secondary:pressed {
+    -fx-background-color: #F2D600;
+}
+
+.btn-nav-pill {
+    -fx-padding: 7px 16px;
+    -fx-font-size: 13px;
+}
+
+/* Inputs, ComboBox, DatePicker */
+.input-field,
+.combo-box-base,
+.date-picker > .text-field {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 10px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-text-fill: #05163D;
+    -fx-prompt-text-fill: #6B7280;
+    -fx-font-family: "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-padding: 8px 12px;
+}
+
+.input-field:focused,
+.combo-box-base:focused,
+.combo-box-base:showing,
+.date-picker:focused > .text-field {
+    -fx-border-color: #10E1FF;
+    -fx-border-width: 1.5px;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.35), 8, 0.1, 0, 0);
+}
+
+.date-picker {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.date-picker > .text-field {
+    -fx-background-radius: 10px 0 0 10px;
+    -fx-border-radius: 10px 0 0 10px;
+}
+
+.date-picker > .arrow-button {
+    -fx-background-color: #F2F2F2;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0 10px 10px 0;
+    -fx-border-color: #E7E7E7 #E7E7E7 #E7E7E7 transparent;
+    -fx-border-width: 1px;
+    -fx-border-radius: 0 10px 10px 0;
+    -fx-padding: 0 12px;
+    -fx-cursor: hand;
+}
+
+.date-picker > .arrow-button:hover {
+    -fx-background-color: #E7E7E7;
+}
+
+.combo-box-base > .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 10px 0 4px;
+}
+
+.combo-box-base > .list-cell {
+    -fx-text-fill: #05163D;
+    -fx-padding: 0 4px 0 0;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.12), 16, 0.0, 0, 4);
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #05163D;
+    -fx-padding: 8px 12px;
+}
+
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #F2F2F2;
+    -fx-text-fill: #016BE5;
+}
+
+/* Segmented Pill TabPane */
+.workspace-tabs > .tab-header-area {
+    -fx-padding: 0 0 14px 0;
+}
+
+.workspace-tabs > .tab-header-area > .tab-header-background {
+    -fx-background-color: #F2F2F2;
+    -fx-background-radius: 12px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+}
+
+.workspace-tabs > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-insets: 4;
+    -fx-background-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-padding: 10px 22px;
+    -fx-cursor: hand;
+}
+
+.workspace-tabs > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.55);
+}
+
+.workspace-tabs > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 4;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.08), 8, 0.0, 0, 2);
+}
+
+.workspace-tabs > .tab-header-area > .headers-region > .tab .tab-label {
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-text-fill: #5B616E;
+    -fx-font-size: 14px;
+}
+
+.workspace-tabs > .tab-header-area > .headers-region > .tab:selected .tab-label {
+    -fx-text-fill: #05163D;
+}
+
+.workspace-tabs > .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 4px 0 0 0;
+}
+
+/* Web3 Explorer TableView (Borderless Columns, 48px Rows) */
+.flight-table {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 16px;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.05), 14, 0.0, 0, 3);
+}
+
+.flight-table .column-header-background {
+    -fx-background-color: #F2F2F2;
+    -fx-background-radius: 16px 16px 0 0;
+    -fx-border-color: transparent transparent #E7E7E7 transparent;
+    -fx-border-width: 1px;
+}
+
+.flight-table .column-header,
+.flight-table .filler {
+    -fx-background-color: transparent;
+    -fx-size: 44px;
+    -fx-border-color: transparent;
+}
+
+.flight-table .column-header .label {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-text-fill: #272727;
+    -fx-font-size: 11px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 12px;
+}
+
+.flight-table .table-row-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-cell-size: 48px;
+    -fx-border-color: transparent transparent #E7E7E7 transparent;
+    -fx-border-width: 1px;
+}
+
+.flight-table .table-row-cell:filled:hover {
+    -fx-background-color: #F7FAFF;
+    -fx-effect: dropshadow(gaussian, rgba(5, 22, 61, 0.10), 10, 0.0, 0, 2);
+}
+
+.flight-table .table-row-cell:filled:selected {
+    -fx-background-color: #E8F3FF;
+}
+
+.flight-table .table-cell {
+    -fx-text-fill: #05163D;
+    -fx-font-family: "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 12px;
+    -fx-border-color: transparent;
+}
+
+.flight-table .table-cell.explorer-mono-cell {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 13px;
+    -fx-text-fill: #05163D;
+}
+
+.flight-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: #05163D;
+}
+
+/* Web3 Pill Badges */
+.badge {
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-padding: 5px 12px;
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 11px;
+}
+
+.badge-guest {
+    -fx-background-color: #F2F2F2;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-text-fill: #272727;
+}
+
+.badge-passenger {
+    -fx-background-color: #05163D;
+    -fx-border-color: #10E1FF;
+    -fx-border-width: 1px;
+    -fx-text-fill: #10E1FF;
+}
+
+.badge-admin {
+    -fx-background-color: #016BE5;
+    -fx-text-fill: #FFFFFF;
+}
+
+.badge-status-scheduled {
+    -fx-background-color: rgba(71, 211, 47, 0.16);
+    -fx-border-color: #47D32F;
+    -fx-border-width: 1px;
+    -fx-text-fill: #145A0A;
+}
+
+.badge-status-warning {
+    -fx-background-color: rgba(255, 225, 3, 0.25);
+    -fx-border-color: #E0C000;
+    -fx-border-width: 1px;
+    -fx-text-fill: #5C4500;
+}
+
+.badge-status-danger {
+    -fx-background-color: rgba(255, 68, 0, 0.14);
+    -fx-border-color: #FF4400;
+    -fx-border-width: 1px;
+    -fx-text-fill: #9E2A00;
+}
+
+.badge-business {
+    -fx-background-color: #EEF4FF;
+    -fx-border-color: #016BE5;
+    -fx-border-width: 1px;
+    -fx-text-fill: #05163D;
+}
+
+.badge-legroom {
+    -fx-background-color: #E8FCFF;
+    -fx-border-color: #10E1FF;
+    -fx-border-width: 1px;
+    -fx-text-fill: #05163D;
+}
+
+.badge-economy {
+    -fx-background-color: #F2F2F2;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-text-fill: #272727;
+}
+
+.badge-selected {
+    -fx-background-color: #05163D;
+    -fx-border-color: #10E1FF;
+    -fx-border-width: 1px;
+    -fx-text-fill: #10E1FF;
+}
+
+.badge-reserved {
+    -fx-background-color: #FFF4B8;
+    -fx-border-color: #FFE103;
+    -fx-border-width: 1px;
+    -fx-text-fill: #5C4500;
+}
+
+.badge-occupied {
+    -fx-background-color: #E7E7E7;
+    -fx-border-color: #272727;
+    -fx-border-width: 1px;
+    -fx-text-fill: #272727;
+}
+
+/* Cabin Seat Map */
+.seat-scroll {
+    -fx-background-color: #F2F2F2;
+    -fx-background: #F2F2F2;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-background-radius: 16px;
+}
+
+.seat-scroll > .viewport {
+    -fx-background-color: #F2F2F2;
+}
+
+.seat-tile {
+    -fx-background-insets: 0;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1.5px;
+    -fx-padding: 10px 8px;
+    -fx-cursor: hand;
+}
+
+.seat-tile .seat-code {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 14px;
+    -fx-text-fill: #05163D;
+}
+
+.seat-tile .seat-meta {
+    -fx-font-family: "Aeonik", "Segoe UI", sans-serif;
+    -fx-font-size: 11px;
+    -fx-text-fill: #272727;
+}
+
+.seat-tile .seat-price {
+    -fx-font-family: "DM Mono", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #016BE5;
+}
+
+.seat-business {
+    -fx-background-color: #EEF4FF;
+    -fx-border-color: #016BE5;
+}
+
+.seat-legroom {
+    -fx-background-color: #E8FCFF;
+    -fx-border-color: #10E1FF;
+}
+
+.seat-economy {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E7E7E7;
+}
+
+.seat-tile:hover {
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.40), 10, 0.15, 0, 0);
+}
+
+.seat-tile:selected {
+    -fx-background-color: #05163D;
+    -fx-border-color: #10E1FF;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.55), 14, 0.2, 0, 0);
+}
+
+.seat-tile:selected .seat-code,
+.seat-tile:selected .seat-meta {
+    -fx-text-fill: #FFFFFF;
+}
+
+.seat-tile:selected .seat-price {
+    -fx-text-fill: #10E1FF;
+}
+
+.seat-reserved,
+.seat-occupied,
+.seat-tile:disabled {
+    -fx-cursor: default;
+    -fx-opacity: 1.0;
+}
+
+.seat-tile:disabled > * {
+    -fx-opacity: 1.0;
+}
+
+.seat-reserved {
+    -fx-background-color: #FFF7CC;
+    -fx-border-color: #FFE103;
+}
+
+.seat-reserved .seat-code,
+.seat-reserved .seat-meta,
+.seat-reserved .seat-price {
+    -fx-text-fill: #5C4500;
+}
+
+.seat-occupied {
+    -fx-background-color: #E7E7E7;
+    -fx-border-color: #272727;
+}
+
+.seat-occupied .seat-code,
+.seat-occupied .seat-meta,
+.seat-occupied .seat-price {
+    -fx-text-fill: #272727;
+}
+
+/* ScrollBars */
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #D6D6D6;
+    -fx-background-radius: 6px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #016BE5;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+/* Dialogs & Alerts */
+.dialog-pane {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E7E7E7;
+    -fx-border-width: 1px;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #F2F2F2;
+}
+
+.dialog-pane .content.label {
+    -fx-font-family: "Aeonik", "Segoe UI", sans-serif;
+    -fx-text-fill: #05163D;
+    -fx-font-size: 14px;
+}
+
+.dialog-pane .button-bar .button {
+    -fx-background-color: #05163D;
+    -fx-background-radius: 24px;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Aeonik Medium", "Aeonik", "Segoe UI", sans-serif;
+    -fx-padding: 8px 18px;
+    -fx-cursor: hand;
+}
+
+.dialog-pane .button-bar .button:hover {
+    -fx-text-fill: #10E1FF;
+    -fx-effect: dropshadow(gaussian, rgba(16, 225, 255, 0.55), 14, 0.2, 0, 0);
+}

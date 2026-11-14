@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Modal JavaFX dialog rendering a flight's cabin seat map in a responsive grid with live fare preview.
+ * Modal JavaFX dialog rendering a flight's cabin seat map in a responsive Web3 grid with live fare preview.
  */
 public class SeatSelectionDialog extends Stage {
 
@@ -41,8 +41,8 @@ public class SeatSelectionDialog extends Stage {
     private final Flight flight;
     private final Set<String> selectedSeatNumbers = new LinkedHashSet<>();
 
-    private final Label selectedSeatsLabel = AnthropicTheme.createSectionLabel("");
-    private final Label totalPriceLabel = AnthropicTheme.createHeadingLabel("", "heading-md");
+    private final Label selectedSeatsLabel = ArbitrumTheme.createMonoLabel("");
+    private final Label totalPriceLabel = ArbitrumTheme.createHeadingLabel("", "heading-md");
     private Booking createdBooking;
 
     public SeatSelectionDialog(Window owner, ReservationGuiController controller, Flight flight) {
@@ -52,29 +52,34 @@ public class SeatSelectionDialog extends Stage {
         setTitle("Select Seats - " + flight.getFlightNumber());
         initOwner(owner);
         initModality(Modality.APPLICATION_MODAL);
-        setMinWidth(780);
-        setMinHeight(640);
+        setMinWidth(820);
+        setMinHeight(680);
 
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(AnthropicTheme.SPACE_24));
+        root.getStyleClass().add("bg-repeating-lines");
+        root.setPadding(new Insets(ArbitrumTheme.SPACE_24));
 
-        // Header + legend
-        Label heading = AnthropicTheme.createHeadingLabel("Cabin Seat Map - " + flight.getFlightNumber(), "heading-lg");
-        Label routeInfo = AnthropicTheme.createMutedLabel(
+        // Hero header + legend
+        Label eyebrow = ArbitrumTheme.createCyanEyebrowLabel("CABIN ALLOCATION // SEAT MAP");
+        Label heading = ArbitrumTheme.createDisplayTitle("Cabin Seat Map - " + flight.getFlightNumber(), "display-md");
+        Label routeInfo = ArbitrumTheme.createHeroSubtitle(
                 flight.getDepartureAirport().getAirportCode()
                         + " -> " + flight.getArrivalAirport().getAirportCode()
                         + "  |  Aircraft: " + flight.getAircraft().getModel()
                         + "  |  Base Fare: " + ReservationGuiController.formatCurrency(flight.getBasePrice())
         );
 
-        VBox headerPanel = new VBox(AnthropicTheme.SPACE_12, new VBox(AnthropicTheme.SPACE_8, heading, routeInfo), buildLegendRow());
-        BorderPane.setMargin(headerPanel, new Insets(0, 0, AnthropicTheme.SPACE_16, 0));
+        VBox heroBanner = new VBox(ArbitrumTheme.SPACE_8, eyebrow, heading, routeInfo);
+        heroBanner.getStyleClass().add("hero-banner");
+
+        VBox headerPanel = new VBox(ArbitrumTheme.SPACE_12, heroBanner, buildLegendRow());
+        BorderPane.setMargin(headerPanel, new Insets(0, 0, ArbitrumTheme.SPACE_16, 0));
 
         // Seat grid
         GridPane seatGrid = new GridPane();
-        seatGrid.setHgap(AnthropicTheme.SPACE_12);
-        seatGrid.setVgap(AnthropicTheme.SPACE_12);
-        seatGrid.setPadding(new Insets(AnthropicTheme.SPACE_16));
+        seatGrid.setHgap(ArbitrumTheme.SPACE_12);
+        seatGrid.setVgap(ArbitrumTheme.SPACE_12);
+        seatGrid.setPadding(new Insets(ArbitrumTheme.SPACE_16));
 
         for (int c = 0; c < CABIN_COLUMNS; c++) {
             ColumnConstraints col = new ColumnConstraints();
@@ -91,26 +96,27 @@ public class SeatSelectionDialog extends Stage {
         ScrollPane seatScrollPane = new ScrollPane(seatGrid);
         seatScrollPane.getStyleClass().add("seat-scroll");
         seatScrollPane.setFitToWidth(true);
-        seatScrollPane.setPrefViewportHeight(360);
+        seatScrollPane.setPrefViewportHeight(350);
 
-        // Footer summary & actions
-        VBox summaryPanel = new VBox(AnthropicTheme.SPACE_8, selectedSeatsLabel, totalPriceLabel);
+        // Footer summary & actions (yellow-to-cyan accent over stone-white surface)
+        Label summaryEyebrow = ArbitrumTheme.createEyebrowLabel("LIVE FARE PREVIEW");
+        VBox summaryPanel = new VBox(4, summaryEyebrow, selectedSeatsLabel, totalPriceLabel);
         summaryPanel.setAlignment(Pos.CENTER_LEFT);
 
-        Button cancelButton = AnthropicTheme.createSecondaryButton("Cancel");
+        Button cancelButton = ArbitrumTheme.createSecondaryButton("Cancel");
         cancelButton.setOnAction(e -> close());
 
-        Button confirmButton = AnthropicTheme.createPrimaryButton("Confirm Booking");
+        Button confirmButton = ArbitrumTheme.createPrimaryButton("Confirm Booking");
         confirmButton.setOnAction(e -> confirmBooking());
 
-        HBox actionButtons = new HBox(AnthropicTheme.SPACE_12, cancelButton, confirmButton);
+        HBox actionButtons = new HBox(ArbitrumTheme.SPACE_12, cancelButton, confirmButton);
         actionButtons.setAlignment(Pos.CENTER_RIGHT);
 
         BorderPane footerPanel = new BorderPane();
-        footerPanel.getStyleClass().add("subtle-panel");
+        footerPanel.getStyleClass().add("fare-summary-bar");
         footerPanel.setLeft(summaryPanel);
         footerPanel.setRight(actionButtons);
-        BorderPane.setMargin(footerPanel, new Insets(AnthropicTheme.SPACE_16, 0, 0, 0));
+        BorderPane.setMargin(footerPanel, new Insets(ArbitrumTheme.SPACE_16, 0, 0, 0));
 
         root.setTop(headerPanel);
         root.setCenter(seatScrollPane);
@@ -118,8 +124,8 @@ public class SeatSelectionDialog extends Stage {
 
         updateSelectionSummary();
 
-        Scene scene = new Scene(root, 840, 680);
-        AnthropicTheme.applyStylesheet(scene);
+        Scene scene = new Scene(root, 880, 720);
+        ArbitrumTheme.applyStylesheet(scene);
         setScene(scene);
     }
 
@@ -128,14 +134,14 @@ public class SeatSelectionDialog extends Stage {
     }
 
     private FlowPane buildLegendRow() {
-        FlowPane legend = new FlowPane(AnthropicTheme.SPACE_8, AnthropicTheme.SPACE_8);
+        FlowPane legend = new FlowPane(ArbitrumTheme.SPACE_8, ArbitrumTheme.SPACE_8);
         legend.getChildren().addAll(
-                AnthropicTheme.createBadgeLabel("Business (Lounge)", "badge-business"),
-                AnthropicTheme.createBadgeLabel("Economy+ Legroom", "badge-legroom"),
-                AnthropicTheme.createBadgeLabel("Economy", "badge-economy"),
-                AnthropicTheme.createBadgeLabel("Selected", "badge-selected"),
-                AnthropicTheme.createBadgeLabel("Reserved", "badge-reserved"),
-                AnthropicTheme.createBadgeLabel("Occupied", "badge-occupied")
+                ArbitrumTheme.createBadgeLabel("Business (Lounge)", "badge-business"),
+                ArbitrumTheme.createBadgeLabel("Economy+ Legroom", "badge-legroom"),
+                ArbitrumTheme.createBadgeLabel("Economy", "badge-economy"),
+                ArbitrumTheme.createBadgeLabel("Selected", "badge-selected"),
+                ArbitrumTheme.createBadgeLabel("Reserved", "badge-reserved"),
+                ArbitrumTheme.createBadgeLabel("Occupied", "badge-occupied")
         );
         return legend;
     }
@@ -158,7 +164,7 @@ public class SeatSelectionDialog extends Stage {
         ToggleButton button = new ToggleButton();
         button.setGraphic(content);
         button.setMaxWidth(Double.MAX_VALUE);
-        button.setPrefHeight(84);
+        button.setPrefHeight(86);
         button.getStyleClass().addAll("seat-tile", presentation.tileStyleClass());
         button.setTooltip(new Tooltip(presentation.tooltip()));
 
@@ -231,7 +237,7 @@ public class SeatSelectionDialog extends Stage {
         try {
             Booking booking = controller.bookSeats(flight.getFlightId(), seatsToBook);
             this.createdBooking = booking;
-            AnthropicTheme.showInfo(
+            ArbitrumTheme.showInfo(
                     this,
                     "Booking Hold Confirmed",
                     "Booking " + booking.getBookingId() + " created (" + booking.getStatus() + ").\n"
@@ -241,7 +247,7 @@ public class SeatSelectionDialog extends Stage {
             );
             close();
         } catch (AirlineReservationException ex) {
-            AnthropicTheme.showError(this, "Seat Booking Failed", ex.getMessage());
+            ArbitrumTheme.showError(this, "Seat Booking Failed", ex.getMessage());
         }
     }
 

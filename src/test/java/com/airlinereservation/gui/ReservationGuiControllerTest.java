@@ -212,4 +212,30 @@ class ReservationGuiControllerTest {
         system.cancelFlight("FL-03");
         assertThrows(InvalidStateException.class, () -> controller.bookSeats("FL-03", List.of("1A")));
     }
+
+    @Test
+    void computesLivePortalMetricsAndUpdatesOnBookingCancellationAndReset() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        ReservationGuiController.PortalMetrics initial = controller.getPortalMetrics();
+        assertEquals(3, initial.airportsCount());
+        assertEquals(3, initial.scheduledFlightsCount());
+        assertEquals(49, initial.availableSeatsCount());
+
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        controller.bookSeats("FL-01", List.of("1B", "2A"));
+        assertEquals(47, controller.getPortalMetrics().availableSeatsCount());
+
+        system.cancelFlight("FL-03");
+        ReservationGuiController.PortalMetrics afterCancel = controller.getPortalMetrics();
+        assertEquals(2, afterCancel.scheduledFlightsCount());
+        assertEquals(31, afterCancel.availableSeatsCount());
+
+        controller.resetDemoData();
+        ReservationGuiController.PortalMetrics afterReset = controller.getPortalMetrics();
+        assertEquals(3, afterReset.airportsCount());
+        assertEquals(3, afterReset.scheduledFlightsCount());
+        assertEquals(49, afterReset.availableSeatsCount());
+    }
 }

@@ -12,6 +12,7 @@ public class AirlineReservationFxApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        ArbitrumTheme.loadFonts();
         ReservationGuiController controller = new ReservationGuiController(DemoDataSeeder.createSeededSystem());
         MainWindow mainWindow = new MainWindow(primaryStage, controller);
         mainWindow.show();

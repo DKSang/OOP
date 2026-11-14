@@ -1,9 +1,11 @@
 package com.airlinereservation.gui;
 
+import com.airlinereservation.enums.FlightStatus;
 import com.airlinereservation.exception.AirlineReservationException;
 import com.airlinereservation.model.Airport;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Person;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -12,6 +14,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -23,10 +26,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 /**
@@ -40,7 +45,7 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     private final ComboBox<Airport> arrivalCombo = new ComboBox<>();
     private final DatePicker travelDatePicker;
     private final TextField seatCountField = new TextField("1");
-    private final Label flightCountLabel = AnthropicTheme.createMutedLabel("Showing 0 flight(s)");
+    private final Label flightCountLabel = ArbitrumTheme.createMonoLabel("Showing 0 flight(s)");
     private final TableView<Flight> flightTable = new TableView<>();
 
     private List<Flight> displayedFlights = List.of();
@@ -48,15 +53,17 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     public PassengerWorkspaceView(ReservationGuiController controller) {
         super(
                 controller,
+                "PASSENGER PORTAL // FLIGHT EXPLORER",
                 "Passenger Workspace",
-                "Flight search, interactive seat selection, and booking payment tabs connect here."
+                "Flight search, interactive cabin seat selection, and booking settlement connect here."
         );
-        this.travelDatePicker = AnthropicTheme.createIsoDatePicker(controller.getDefaultTravelDate());
+        this.travelDatePicker = ArbitrumTheme.createIsoDatePicker(controller.getDefaultTravelDate());
 
         tabs.getTabs().addAll(
                 createNonClosableTab("Search & Book Flights", createSearchFlightsTab()),
                 createPlaceholderTab(
                         "My Bookings",
+                        "BOOKING HISTORY",
                         "My Bookings",
                         "Passenger booking history, payment retry, check-in, and cancellation will appear here."
                 )
@@ -77,14 +84,14 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
 
     private BorderPane createSearchFlightsTab() {
         BorderPane layout = new BorderPane();
-        layout.setPadding(new Insets(AnthropicTheme.SPACE_8, 0, 0, 0));
+        layout.setPadding(new Insets(ArbitrumTheme.SPACE_8, 0, 0, 0));
 
         VBox filterCard = createSearchFilterCard();
-        BorderPane.setMargin(filterCard, new Insets(0, 0, AnthropicTheme.SPACE_16, 0));
+        BorderPane.setMargin(filterCard, new Insets(0, 0, ArbitrumTheme.SPACE_16, 0));
 
         configureFlightTable();
         BorderPane bottomBar = createBottomActionBar();
-        BorderPane.setMargin(bottomBar, new Insets(AnthropicTheme.SPACE_16, 0, 0, 0));
+        BorderPane.setMargin(bottomBar, new Insets(ArbitrumTheme.SPACE_16, 0, 0, 0));
 
         layout.setTop(filterCard);
         layout.setCenter(flightTable);
@@ -93,14 +100,15 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     }
 
     private VBox createSearchFilterCard() {
-        VBox card = new VBox(AnthropicTheme.SPACE_16);
+        VBox card = new VBox(ArbitrumTheme.SPACE_12);
         card.getStyleClass().add("card");
 
-        Label sectionTitle = AnthropicTheme.createSectionLabel("Find Available Flights");
+        Label eyebrow = ArbitrumTheme.createEyebrowLabel("FLIGHT SEARCH // SCHEDULE QUERY");
+        Label sectionTitle = ArbitrumTheme.createHeadingLabel("Find Available Flights", "heading-md");
 
         GridPane fieldsGrid = new GridPane();
-        fieldsGrid.setHgap(AnthropicTheme.SPACE_16);
-        fieldsGrid.setVgap(AnthropicTheme.SPACE_8);
+        fieldsGrid.setHgap(ArbitrumTheme.SPACE_16);
+        fieldsGrid.setVgap(ArbitrumTheme.SPACE_8);
 
         for (int i = 0; i < 4; i++) {
             ColumnConstraints col = new ColumnConstraints();
@@ -111,29 +119,30 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
 
         configureAirportCombo(departureCombo);
         configureAirportCombo(arrivalCombo);
-        AnthropicTheme.styleTextInput(seatCountField);
+        ArbitrumTheme.styleTextInput(seatCountField);
         seatCountField.setOnAction(e -> executeFlightSearch());
 
-        fieldsGrid.add(AnthropicTheme.createFieldLabel("Departure Airport"), 0, 0);
-        fieldsGrid.add(AnthropicTheme.createFieldLabel("Arrival Airport"), 1, 0);
-        fieldsGrid.add(AnthropicTheme.createFieldLabel("Travel Date (YYYY-MM-DD)"), 2, 0);
-        fieldsGrid.add(AnthropicTheme.createFieldLabel("Seats Needed"), 3, 0);
+        fieldsGrid.add(ArbitrumTheme.createFieldLabel("Departure Airport"), 0, 0);
+        fieldsGrid.add(ArbitrumTheme.createFieldLabel("Arrival Airport"), 1, 0);
+        fieldsGrid.add(ArbitrumTheme.createFieldLabel("Travel Date (YYYY-MM-DD)"), 2, 0);
+        fieldsGrid.add(ArbitrumTheme.createFieldLabel("Seats Needed"), 3, 0);
 
         fieldsGrid.add(departureCombo, 0, 1);
         fieldsGrid.add(arrivalCombo, 1, 1);
         fieldsGrid.add(travelDatePicker, 2, 1);
         fieldsGrid.add(seatCountField, 3, 1);
 
-        Button searchButton = AnthropicTheme.createPrimaryButton("Search Flights");
+        Button searchButton = ArbitrumTheme.createPrimaryButton("Search Flights");
         searchButton.setOnAction(e -> executeFlightSearch());
 
-        Button resetButton = AnthropicTheme.createSecondaryButton("Show All Scheduled Flights");
+        Button resetButton = ArbitrumTheme.createSecondaryButton("Show All Scheduled Flights");
         resetButton.setOnAction(e -> resetFiltersAndShowAllScheduled());
 
-        HBox actionsRow = new HBox(AnthropicTheme.SPACE_12, searchButton, resetButton);
+        HBox actionsRow = new HBox(ArbitrumTheme.SPACE_12, searchButton, resetButton);
         actionsRow.setAlignment(Pos.CENTER_LEFT);
+        VBox.setMargin(actionsRow, new Insets(4, 0, 0, 0));
 
-        card.getChildren().addAll(sectionTitle, fieldsGrid, actionsRow);
+        card.getChildren().addAll(eyebrow, sectionTitle, fieldsGrid, actionsRow);
         return card;
     }
 
@@ -141,20 +150,20 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         flightTable.getStyleClass().add("flight-table");
         flightTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         flightTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        flightTable.setPlaceholder(AnthropicTheme.createMutedLabel("No matching flights found."));
+        flightTable.setPlaceholder(ArbitrumTheme.createMutedLabel("No matching flights found."));
 
         String[] cols = ReservationGuiController.FLIGHT_TABLE_COLUMNS;
         flightTable.getColumns().setAll(List.of(
-                textColumn(cols[0], Flight::getFlightId, 70),
-                textColumn(cols[1], Flight::getFlightNumber, 80),
+                textColumn(cols[0], Flight::getFlightId, 78, true),
+                textColumn(cols[1], Flight::getFlightNumber, 84, true),
                 textColumn(cols[2], f -> f.getDepartureAirport().getAirportCode()
-                        + " -> " + f.getArrivalAirport().getAirportCode(), 105),
-                textColumn(cols[3], f -> DATE_TIME_FORMATTER.format(f.getDepartureTime()), 135),
-                textColumn(cols[4], f -> DATE_TIME_FORMATTER.format(f.getArrivalTime()), 135),
-                textColumn(cols[5], f -> f.getAircraft().getModel(), 135),
-                textColumn(cols[6], f -> String.valueOf(f.getAvailableSeats().size()), 110),
-                textColumn(cols[7], f -> ReservationGuiController.formatCurrency(f.getBasePrice()), 125),
-                textColumn(cols[8], f -> f.getStatus().name(), 100)
+                        + " -> " + f.getArrivalAirport().getAirportCode(), 110, true),
+                textColumn(cols[3], f -> DATE_TIME_FORMATTER.format(f.getDepartureTime()), 140, true),
+                textColumn(cols[4], f -> DATE_TIME_FORMATTER.format(f.getArrivalTime()), 140, true),
+                textColumn(cols[5], f -> f.getAircraft().getModel(), 130, false),
+                textColumn(cols[6], f -> String.valueOf(f.getAvailableSeats().size()), 110, true),
+                textColumn(cols[7], f -> ReservationGuiController.formatCurrency(f.getBasePrice()), 130, true),
+                statusBadgeColumn(cols[8], 125)
         ));
 
         flightTable.setRowFactory(tv -> {
@@ -174,10 +183,10 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button selectSeatsButton = AnthropicTheme.createPrimaryButton("Select Seats & Book");
+        Button selectSeatsButton = ArbitrumTheme.createPrimaryButton("Select Seats & Book");
         selectSeatsButton.setOnAction(e -> openSeatSelectionDialog());
 
-        Label tipLabel = AnthropicTheme.createMutedLabel("Tip: Double-click any flight row or select and press the button.");
+        Label tipLabel = ArbitrumTheme.createMutedLabel("Tip: Double-click any flight row or select and press the button.");
         VBox leftMeta = new VBox(2, flightCountLabel, tipLabel);
         leftMeta.setAlignment(Pos.CENTER_LEFT);
 
@@ -219,7 +228,7 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
             );
             populateFlightTable(matches);
         } catch (AirlineReservationException ex) {
-            AnthropicTheme.showError(
+            ArbitrumTheme.showError(
                     getScene() == null ? null : getScene().getWindow(),
                     "Flight Search Error",
                     ex.getMessage()
@@ -241,10 +250,11 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     }
 
     private void openSeatSelectionDialog() {
+        Window owner = getScene() == null ? null : getScene().getWindow();
         Flight selected = flightTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            AnthropicTheme.showWarning(
-                    getScene() == null ? null : getScene().getWindow(),
+            ArbitrumTheme.showWarning(
+                    owner,
                     "No Flight Selected",
                     "Please select a flight from the table first."
             );
@@ -252,36 +262,70 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         }
 
         try {
-            SeatSelectionDialog dialog = new SeatSelectionDialog(
-                    getScene() == null ? null : getScene().getWindow(),
-                    controller,
-                    selected
-            );
-            dialog.showAndWait();
+            SeatSelectionDialog dialog = new SeatSelectionDialog(owner, controller, selected);
+            ArbitrumTheme.showModalWithBackdrop(owner, dialog);
             if (dialog.getCreatedBooking() != null) {
                 flightTable.refresh();
                 populateFlightTable(displayedFlights);
             }
         } catch (AirlineReservationException ex) {
-            AnthropicTheme.showError(
-                    getScene() == null ? null : getScene().getWindow(),
-                    "Unable to Open Seat Map",
-                    ex.getMessage()
-            );
+            ArbitrumTheme.showError(owner, "Unable to Open Seat Map", ex.getMessage());
         }
     }
 
     private static TableColumn<Flight, String> textColumn(String title,
                                                           Function<Flight, String> extractor,
-                                                          double minWidth) {
-        TableColumn<Flight, String> col = new TableColumn<>(title);
+                                                          double minWidth,
+                                                          boolean monospace) {
+        TableColumn<Flight, String> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
         col.setMinWidth(minWidth);
         col.setCellValueFactory(cell -> new ReadOnlyStringWrapper(extractor.apply(cell.getValue())));
+        if (monospace) {
+            col.setCellFactory(column -> new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    getStyleClass().remove("explorer-mono-cell");
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(item);
+                        getStyleClass().add("explorer-mono-cell");
+                    }
+                }
+            });
+        }
+        return col;
+    }
+
+    private static TableColumn<Flight, FlightStatus> statusBadgeColumn(String title, double minWidth) {
+        TableColumn<Flight, FlightStatus> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
+        col.setMinWidth(minWidth);
+        col.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getStatus()));
+        col.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(FlightStatus status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    String badgeClass = switch (status) {
+                        case SCHEDULED -> "badge-status-scheduled";
+                        case BOARDING -> "badge-status-warning";
+                        case CANCELLED -> "badge-status-danger";
+                        case DEPARTED, ARRIVED -> "badge-guest";
+                    };
+                    setGraphic(ArbitrumTheme.createBadgeLabel(status.name(), badgeClass));
+                    setText(null);
+                }
+            }
+        });
         return col;
     }
 
     private static void configureAirportCombo(ComboBox<Airport> comboBox) {
-        AnthropicTheme.styleComboBox(comboBox);
+        ArbitrumTheme.styleComboBox(comboBox);
         comboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(Airport airport) {
