@@ -5,6 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.DatePicker;
@@ -241,6 +242,15 @@ public final class ArbitrumTheme {
         showAlert(Alert.AlertType.ERROR, owner, title, message);
     }
 
+    public static boolean showConfirmation(Window owner, String title, String message) {
+        Alert alert = buildStyledAlert(Alert.AlertType.CONFIRMATION, owner, title, message);
+        boolean[] confirmed = {false};
+        runWithBackdropBlur(owner, () -> alert.showAndWait()
+                .filter(button -> button == ButtonType.OK)
+                .ifPresent(button -> confirmed[0] = true));
+        return confirmed[0];
+    }
+
     private static Label createLabel(String text, String... styleClasses) {
         Label label = new Label(text);
         label.getStyleClass().addAll(styleClasses);
@@ -252,6 +262,11 @@ public final class ArbitrumTheme {
     }
 
     private static void showAlert(Alert.AlertType type, Window owner, String title, String message) {
+        Alert alert = buildStyledAlert(type, owner, title, message);
+        runWithBackdropBlur(owner, alert::showAndWait);
+    }
+
+    private static Alert buildStyledAlert(Alert.AlertType type, Window owner, String title, String message) {
         loadFonts();
         Alert alert = new Alert(type);
         if (owner != null) {
@@ -264,7 +279,7 @@ public final class ArbitrumTheme {
         DialogPane pane = alert.getDialogPane();
         pane.getStylesheets().add(STYLESHEET);
         pane.setMinWidth(Control.USE_PREF_SIZE);
-        runWithBackdropBlur(owner, alert::showAndWait);
+        return alert;
     }
 
     private static void runWithBackdropBlur(Window owner, Runnable modalAction) {

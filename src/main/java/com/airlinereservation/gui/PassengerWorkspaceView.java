@@ -1,8 +1,11 @@
 package com.airlinereservation.gui;
 
+import com.airlinereservation.enums.BookingStatus;
 import com.airlinereservation.enums.FlightStatus;
+import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.exception.AirlineReservationException;
 import com.airlinereservation.model.Airport;
+import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Person;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -14,6 +17,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -48,6 +52,12 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
     private final Label flightCountLabel = ArbitrumTheme.createMonoLabel("Showing 0 flight(s)");
     private final TableView<Flight> flightTable = new TableView<>();
 
+    private final Label bookingCountLabel = ArbitrumTheme.createMonoLabel("Showing 0 booking(s)");
+    private final TableView<Booking> bookingTable = new TableView<>();
+
+    private final Tab searchFlightsTab;
+    private final Tab myBookingsTab;
+
     private List<Flight> displayedFlights = List.of();
 
     public PassengerWorkspaceView(ReservationGuiController controller) {
@@ -55,19 +65,21 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
                 controller,
                 "PASSENGER PORTAL // FLIGHT EXPLORER",
                 "Passenger Workspace",
-                "Flight search, interactive cabin seat selection, and booking settlement connect here."
+                "Search flights, reserve cabin seats, settle bookings, check in, or manage cancellations."
         );
         this.travelDatePicker = ArbitrumTheme.createIsoDatePicker(controller.getDefaultTravelDate());
 
-        tabs.getTabs().addAll(
-                createNonClosableTab("Search & Book Flights", createSearchFlightsTab()),
-                createPlaceholderTab(
-                        "My Bookings",
-                        "BOOKING HISTORY",
-                        "My Bookings",
-                        "Passenger booking history, payment retry, check-in, and cancellation will appear here."
-                )
-        );
+        this.searchFlightsTab = createNonClosableTab("Search & Book Flights", createSearchFlightsTab());
+        this.myBookingsTab = createNonClosableTab("My Bookings", createMyBookingsTab());
+        tabs.getTabs().addAll(searchFlightsTab, myBookingsTab);
+
+        tabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (newTab == myBookingsTab) {
+                refreshBookingTable();
+            } else if (newTab == searchFlightsTab) {
+                flightTable.refresh();
+            }
+        });
     }
 
     @Override
@@ -75,6 +87,7 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         super.refreshData();
         populateAirportSelectors();
         resetFiltersAndShowAllScheduled();
+        refreshBookingTable();
     }
 
     @Override
@@ -156,14 +169,13 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         flightTable.getColumns().setAll(List.of(
                 textColumn(cols[0], Flight::getFlightId, 78, true),
                 textColumn(cols[1], Flight::getFlightNumber, 84, true),
-                textColumn(cols[2], f -> f.getDepartureAirport().getAirportCode()
-                        + " -> " + f.getArrivalAirport().getAirportCode(), 110, true),
+                textColumn(cols[2], ReservationGuiController::formatRoute, 110, true),
                 textColumn(cols[3], f -> DATE_TIME_FORMATTER.format(f.getDepartureTime()), 140, true),
                 textColumn(cols[4], f -> DATE_TIME_FORMATTER.format(f.getArrivalTime()), 140, true),
                 textColumn(cols[5], f -> f.getAircraft().getModel(), 130, false),
                 textColumn(cols[6], f -> String.valueOf(f.getAvailableSeats().size()), 110, true),
                 textColumn(cols[7], f -> ReservationGuiController.formatCurrency(f.getBasePrice()), 130, true),
-                statusBadgeColumn(cols[8], 125)
+                flightStatusBadgeColumn(cols[8], 125)
         ));
 
         flightTable.setRowFactory(tv -> {
@@ -265,19 +277,213 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
             SeatSelectionDialog dialog = new SeatSelectionDialog(owner, controller, selected);
             ArbitrumTheme.showModalWithBackdrop(owner, dialog);
             if (dialog.getCreatedBooking() != null) {
-                flightTable.refresh();
-                populateFlightTable(displayedFlights);
+                refreshTablesAfterMutation();
             }
         } catch (AirlineReservationException ex) {
             ArbitrumTheme.showError(owner, "Unable to Open Seat Map", ex.getMessage());
         }
     }
 
-    private static TableColumn<Flight, String> textColumn(String title,
-                                                          Function<Flight, String> extractor,
-                                                          double minWidth,
-                                                          boolean monospace) {
-        TableColumn<Flight, String> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
+    private BorderPane createMyBookingsTab() {
+        BorderPane layout = new BorderPane();
+        layout.setPadding(new Insets(ArbitrumTheme.SPACE_8, 0, 0, 0));
+
+        VBox headerCard = new VBox(
+                ArbitrumTheme.SPACE_8,
+                ArbitrumTheme.createEyebrowLabel("BOOKING HISTORY // PERSONAL LEDGER"),
+                ArbitrumTheme.createHeadingLabel("My Bookings", "heading-md"),
+                ArbitrumTheme.createMutedLabel(
+                        "Inspect bookings, settle pending payments (with failure-retry simulation), check in, or cancel."
+                )
+        );
+        headerCard.getStyleClass().add("card-stone");
+        BorderPane.setMargin(headerCard, new Insets(0, 0, ArbitrumTheme.SPACE_16, 0));
+
+        configureBookingTable();
+        BorderPane actionBar = createBookingActionBar();
+        BorderPane.setMargin(actionBar, new Insets(ArbitrumTheme.SPACE_16, 0, 0, 0));
+
+        layout.setTop(headerCard);
+        layout.setCenter(bookingTable);
+        layout.setBottom(actionBar);
+        return layout;
+    }
+
+    private void configureBookingTable() {
+        bookingTable.getStyleClass().add("flight-table");
+        bookingTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        bookingTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        bookingTable.setPlaceholder(ArbitrumTheme.createMutedLabel("You have no bookings yet. Reserve seats from Search & Book Flights."));
+
+        String[] cols = ReservationGuiController.BOOKING_TABLE_COLUMNS;
+        bookingTable.getColumns().setAll(List.of(
+                textColumn(cols[0], Booking::getBookingId, 95, true),
+                textColumn(cols[1], b -> b.getFlight().getFlightNumber(), 95, true),
+                textColumn(cols[2], b -> ReservationGuiController.formatRoute(b.getFlight()), 120, true),
+                textColumn(cols[3], ReservationGuiController::formatSeatNumbers, 130, true),
+                textColumn(cols[4], b -> ReservationGuiController.formatCurrency(b.getTotalPrice()), 140, true),
+                bookingStatusBadgeColumn(cols[5], 135),
+                paymentStatusBadgeColumn(cols[6], 135)
+        ));
+    }
+
+    private BorderPane createBookingActionBar() {
+        BorderPane bar = new BorderPane();
+
+        Label tipLabel = ArbitrumTheme.createMutedLabel("Select a booking row to pay, check in, or cancel.");
+        VBox leftMeta = new VBox(2, bookingCountLabel, tipLabel);
+        leftMeta.setAlignment(Pos.CENTER_LEFT);
+
+        Button payButton = ArbitrumTheme.createPrimaryButton("Pay Booking");
+        payButton.setOnAction(e -> openPaymentDialog());
+
+        Button checkInButton = ArbitrumTheme.createSecondaryButton("Check-in");
+        checkInButton.setOnAction(e -> checkInSelectedBooking());
+
+        Button cancelButton = ArbitrumTheme.createSecondaryButton("Cancel Booking");
+        cancelButton.setOnAction(e -> cancelSelectedBooking());
+
+        HBox actions = new HBox(ArbitrumTheme.SPACE_12, payButton, checkInButton, cancelButton);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+
+        bar.setLeft(leftMeta);
+        bar.setRight(actions);
+        return bar;
+    }
+
+    private void refreshBookingTable() {
+        if (!controller.isPassengerLoggedIn()) {
+            bookingTable.getItems().clear();
+            bookingCountLabel.setText("Showing 0 booking(s)");
+            return;
+        }
+        String selectedId = getSelectedBooking() == null ? null : getSelectedBooking().getBookingId();
+        List<Booking> bookings = controller.getPassengerBookings();
+        bookingTable.getItems().setAll(bookings);
+        bookingTable.refresh();
+        bookingCountLabel.setText("Showing " + bookings.size() + " booking(s)");
+
+        if (selectedId != null) {
+            for (Booking booking : bookings) {
+                if (booking.getBookingId().equals(selectedId)) {
+                    bookingTable.getSelectionModel().select(booking);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void refreshTablesAfterMutation() {
+        flightTable.refresh();
+        populateFlightTable(displayedFlights);
+        refreshBookingTable();
+    }
+
+    private Booking getSelectedBooking() {
+        return bookingTable.getSelectionModel().getSelectedItem();
+    }
+
+    private Window ownerWindow() {
+        return getScene() == null ? null : getScene().getWindow();
+    }
+
+    private Booking requireSelectedBooking(Window owner, String warningMessage) {
+        Booking selected = getSelectedBooking();
+        if (selected == null) {
+            ArbitrumTheme.showWarning(owner, "No Booking Selected", warningMessage);
+        }
+        return selected;
+    }
+
+    private void openPaymentDialog() {
+        Window owner = ownerWindow();
+        Booking selected = requireSelectedBooking(owner, "Please select a booking from the table first.");
+        if (selected == null) {
+            return;
+        }
+
+        try {
+            Booking payable = controller.validateBookingPayable(selected.getBookingId());
+            PaymentDialog dialog = new PaymentDialog(owner, controller, payable, this::refreshTablesAfterMutation);
+            ArbitrumTheme.showModalWithBackdrop(owner, dialog);
+        } catch (AirlineReservationException ex) {
+            ArbitrumTheme.showError(owner, "Payment Unavailable", ex.getMessage());
+        }
+    }
+
+    private void checkInSelectedBooking() {
+        Window owner = ownerWindow();
+        Booking selected = requireSelectedBooking(owner, "Please select a confirmed booking to check in.");
+        if (selected == null) {
+            return;
+        }
+
+        try {
+            Booking updated = controller.checkInBooking(selected.getBookingId());
+            refreshTablesAfterMutation();
+            ArbitrumTheme.showInfo(
+                    owner,
+                    "Check-in Successful",
+                    "Booking " + updated.getBookingId() + " is now " + updated.getStatus()
+                            + " for flight " + updated.getFlight().getFlightNumber() + "."
+            );
+        } catch (AirlineReservationException ex) {
+            ArbitrumTheme.showError(owner, "Check-in Failed", ex.getMessage());
+        }
+    }
+
+    private void cancelSelectedBooking() {
+        Window owner = ownerWindow();
+        Booking selected = requireSelectedBooking(owner, "Please select a booking to cancel.");
+        if (selected == null) {
+            return;
+        }
+
+        if (selected.getStatus() != BookingStatus.PENDING && selected.getStatus() != BookingStatus.CONFIRMED) {
+            ArbitrumTheme.showError(
+                    owner,
+                    "Cancellation Unavailable",
+                    "Cannot cancel booking " + selected.getBookingId() + " in status: " + selected.getStatus()
+            );
+            return;
+        }
+
+        boolean hasCompletedPayment = selected.getPayment() != null
+                && selected.getPayment().getStatus() == PaymentStatus.COMPLETED;
+        String refundNote = hasCompletedPayment
+                ? "\nCompleted payment " + selected.getPayment().getPaymentId() + " will be REFUNDED."
+                : "";
+        boolean confirmed = ArbitrumTheme.showConfirmation(
+                owner,
+                "Cancel Booking",
+                "Cancel booking " + selected.getBookingId()
+                        + " (" + selected.getFlight().getFlightNumber()
+                        + ", seats: " + ReservationGuiController.formatSeatNumbers(selected) + ")?\n"
+                        + "Reserved/occupied seats will be released back to AVAILABLE." + refundNote
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            controller.cancelBooking(selected.getBookingId());
+            refreshTablesAfterMutation();
+            ArbitrumTheme.showInfo(
+                    owner,
+                    "Booking Cancelled",
+                    "Booking " + selected.getBookingId() + " has been CANCELLED and its seats are now AVAILABLE."
+                            + (hasCompletedPayment ? "\nPayment status is now REFUNDED." : "")
+            );
+        } catch (AirlineReservationException ex) {
+            ArbitrumTheme.showError(owner, "Cancellation Failed", ex.getMessage());
+        }
+    }
+
+    private static <T> TableColumn<T, String> textColumn(String title,
+                                                         Function<T, String> extractor,
+                                                         double minWidth,
+                                                         boolean monospace) {
+        TableColumn<T, String> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
         col.setMinWidth(minWidth);
         col.setCellValueFactory(cell -> new ReadOnlyStringWrapper(extractor.apply(cell.getValue())));
         if (monospace) {
@@ -298,25 +504,78 @@ public class PassengerWorkspaceView extends AbstractWorkspaceView {
         return col;
     }
 
-    private static TableColumn<Flight, FlightStatus> statusBadgeColumn(String title, double minWidth) {
-        TableColumn<Flight, FlightStatus> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
+    private static TableColumn<Flight, FlightStatus> flightStatusBadgeColumn(String title, double minWidth) {
+        return badgeColumn(
+                title,
+                minWidth,
+                Flight::getStatus,
+                Enum::name,
+                status -> switch (status) {
+                    case SCHEDULED -> "badge-status-scheduled";
+                    case BOARDING -> "badge-status-warning";
+                    case CANCELLED -> "badge-status-danger";
+                    case DEPARTED, ARRIVED -> "badge-guest";
+                },
+                false
+        );
+    }
+
+    private static TableColumn<Booking, BookingStatus> bookingStatusBadgeColumn(String title, double minWidth) {
+        return badgeColumn(
+                title,
+                minWidth,
+                Booking::getStatus,
+                Enum::name,
+                status -> switch (status) {
+                    case PENDING -> "badge-status-warning";
+                    case CONFIRMED -> "badge-status-scheduled";
+                    case CHECKED_IN -> "badge-legroom";
+                    case COMPLETED -> "badge-business";
+                    case CANCELLED -> "badge-status-danger";
+                },
+                false
+        );
+    }
+
+    private TableColumn<Booking, PaymentStatus> paymentStatusBadgeColumn(String title, double minWidth) {
+        return badgeColumn(
+                title,
+                minWidth,
+                controller::getBookingPaymentStatus,
+                status -> status == null ? "UNPAID" : status.name(),
+                status -> {
+                    if (status == null) {
+                        return "badge-guest";
+                    }
+                    return switch (status) {
+                        case COMPLETED -> "badge-status-scheduled";
+                        case PENDING -> "badge-status-warning";
+                        case FAILED -> "badge-status-danger";
+                        case REFUNDED -> "badge-business";
+                    };
+                },
+                true
+        );
+    }
+
+    private static <T, S> TableColumn<T, S> badgeColumn(String title,
+                                                        double minWidth,
+                                                        Function<T, S> extractor,
+                                                        Function<S, String> textMapper,
+                                                        Function<S, String> styleMapper,
+                                                        boolean renderNullValue) {
+        TableColumn<T, S> col = new TableColumn<>(title.toUpperCase(Locale.ROOT));
         col.setMinWidth(minWidth);
-        col.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getStatus()));
+        col.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(extractor.apply(cell.getValue())));
         col.setCellFactory(column -> new TableCell<>() {
             @Override
-            protected void updateItem(FlightStatus status, boolean empty) {
-                super.updateItem(status, empty);
-                if (empty || status == null) {
+            protected void updateItem(S value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || (!renderNullValue && value == null)) {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    String badgeClass = switch (status) {
-                        case SCHEDULED -> "badge-status-scheduled";
-                        case BOARDING -> "badge-status-warning";
-                        case CANCELLED -> "badge-status-danger";
-                        case DEPARTED, ARRIVED -> "badge-guest";
-                    };
-                    setGraphic(ArbitrumTheme.createBadgeLabel(status.name(), badgeClass));
+                    setGraphic(ArbitrumTheme.createBadgeLabel(textMapper.apply(value), styleMapper.apply(value)));
                     setText(null);
                 }
             }

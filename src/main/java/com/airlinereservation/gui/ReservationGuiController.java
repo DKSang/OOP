@@ -1,23 +1,31 @@
 package com.airlinereservation.gui;
 
+import com.airlinereservation.enums.PaymentMethod;
+import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.exception.ValidationException;
 import com.airlinereservation.model.Admin;
 import com.airlinereservation.model.Airport;
 import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Passenger;
+import com.airlinereservation.model.Payment;
 import com.airlinereservation.model.Person;
 import com.airlinereservation.model.Seat;
+import com.airlinereservation.payment.PaymentFactory;
+import com.airlinereservation.payment.PaymentStrategy;
 import com.airlinereservation.system.AirlineReservationSystem;
 import com.airlinereservation.system.DemoDataSeeder;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Passive-View controller mediating between JavaFX views and {@link AirlineReservationSystem}.
@@ -29,6 +37,11 @@ public class ReservationGuiController {
             "Aircraft", "Available Seats", "Base Price", "Status"
     };
 
+    public static final String[] BOOKING_TABLE_COLUMNS = {
+            "Booking ID", "Flight No", "Route", "Seats",
+            "Total Price", "Booking Status", "Payment Status"
+    };
+
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private static final List<DemoAccount> DEMO_ACCOUNTS = List.of(
@@ -38,6 +51,7 @@ public class ReservationGuiController {
     );
 
     private final AirlineReservationSystem system;
+    private final Map<String, Payment> latestPaymentAttempts = new HashMap<>();
     private Person currentUser;
 
     public ReservationGuiController(AirlineReservationSystem system) {
@@ -100,6 +114,7 @@ public class ReservationGuiController {
     public void resetDemoData() {
         DemoDataSeeder.reset(system);
         this.currentUser = null;
+        this.latestPaymentAttempts.clear();
     }
 
     public LocalDate getDefaultTravelDate() {
@@ -170,6 +185,84 @@ public class ReservationGuiController {
         return system.createBooking(passenger.getId(), flightId, seatNumbers);
     }
 
+    public List<Booking> getPassengerBookings() {
+        return requireLoggedInPassenger().getBookingHistory();
+    }
+
+    public PaymentStatus getBookingPaymentStatus(Booking booking) {
+        ValidationException.requireNonNull(booking, "Booking");
+        Payment payment = booking.getPayment();
+        if (payment != null) {
+            return payment.getStatus();
+        }
+        Payment latestAttempt = latestPaymentAttempts.get(booking.getBookingId());
+        return latestAttempt != null ? latestAttempt.getStatus() : null;
+    }
+
+    public PaymentStrategy createPaymentStrategy(PaymentMethod method, String primaryDetail, String secondaryDetail) {
+        ValidationException.requireNonNull(method, "Payment method");
+        return switch (method) {
+            case CREDIT_DEBIT_CARD -> PaymentFactory.createCardPayment(primaryDetail, secondaryDetail);
+            case E_WALLET -> PaymentFactory.createEWalletPayment(primaryDetail, secondaryDetail);
+            case BANK_TRANSFER -> PaymentFactory.createBankTransferPayment(primaryDetail, secondaryDetail);
+            case CASH -> PaymentFactory.createCashPayment(primaryDetail, secondaryDetail);
+        };
+    }
+
+    public Payment processPayment(String bookingId,
+                                  PaymentMethod method,
+                                  String primaryDetail,
+                                  String secondaryDetail,
+                                  boolean simulateFailure) {
+        Booking booking = requireOwnedBooking(bookingId);
+        PaymentStrategy strategy = createPaymentStrategy(method, primaryDetail, secondaryDetail);
+        PaymentStrategy executionStrategy = simulateFailure ? failingStrategy(method) : strategy;
+        Payment payment = system.processPayment(booking.getBookingId(), method, executionStrategy);
+        latestPaymentAttempts.put(booking.getBookingId(), payment);
+        return payment;
+    }
+
+    public Booking validateBookingPayable(String bookingId) {
+        Booking booking = requireOwnedBooking(bookingId);
+        booking.validateConfirmable();
+        return booking;
+    }
+
+    public Booking checkInBooking(String bookingId) {
+        Booking booking = requireOwnedBooking(bookingId);
+        system.checkIn(booking.getBookingId());
+        return booking;
+    }
+
+    public boolean cancelBooking(String bookingId) {
+        Booking booking = requireOwnedBooking(bookingId);
+        return system.cancelBooking(booking.getBookingId());
+    }
+
+    private Booking requireOwnedBooking(String bookingId) {
+        Passenger passenger = requireLoggedInPassenger();
+        Booking booking = system.findBookingById(bookingId);
+        if (booking.getPassenger() != passenger) {
+            throw new ValidationException("Booking " + booking.getBookingId()
+                    + " does not belong to logged-in passenger " + passenger.getId());
+        }
+        return booking;
+    }
+
+    private static PaymentStrategy failingStrategy(PaymentMethod method) {
+        return new PaymentStrategy() {
+            @Override
+            public boolean pay(double amount) {
+                return false;
+            }
+
+            @Override
+            public PaymentMethod getPaymentMethod() {
+                return method;
+            }
+        };
+    }
+
     private Passenger requireLoggedInPassenger() {
         if (!(currentUser instanceof Passenger passenger)) {
             throw new ValidationException("Passenger login is required for this action");
@@ -192,7 +285,7 @@ public class ReservationGuiController {
                 .map(flight -> new Object[]{
                         flight.getFlightId(),
                         flight.getFlightNumber(),
-                        flight.getDepartureAirport().getAirportCode() + " -> " + flight.getArrivalAirport().getAirportCode(),
+                        formatRoute(flight),
                         DATE_TIME_FORMATTER.format(flight.getDepartureTime()),
                         DATE_TIME_FORMATTER.format(flight.getArrivalTime()),
                         flight.getAircraft().getModel(),
@@ -201,6 +294,34 @@ public class ReservationGuiController {
                         flight.getStatus()
                 })
                 .toList();
+    }
+
+    public List<Object[]> toBookingTableRows(List<Booking> bookings) {
+        ValidationException.requireNonNull(bookings, "Bookings");
+        return bookings.stream()
+                .map(booking -> new Object[]{
+                        booking.getBookingId(),
+                        booking.getFlight().getFlightNumber(),
+                        formatRoute(booking.getFlight()),
+                        formatSeatNumbers(booking),
+                        formatCurrency(booking.getTotalPrice()),
+                        booking.getStatus(),
+                        getBookingPaymentStatus(booking)
+                })
+                .toList();
+    }
+
+    public static String formatRoute(Flight flight) {
+        ValidationException.requireNonNull(flight, "Flight");
+        return flight.getDepartureAirport().getAirportCode()
+                + " -> " + flight.getArrivalAirport().getAirportCode();
+    }
+
+    public static String formatSeatNumbers(Booking booking) {
+        ValidationException.requireNonNull(booking, "Booking");
+        return booking.getSelectedSeats().stream()
+                .map(Seat::getSeatNumber)
+                .collect(Collectors.joining(", "));
     }
 
     public static String formatCurrency(double amount) {

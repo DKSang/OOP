@@ -13,7 +13,15 @@ import com.airlinereservation.model.Person;
 import com.airlinereservation.model.Seat;
 import com.airlinereservation.enums.BookingStatus;
 import com.airlinereservation.enums.FlightStatus;
+import com.airlinereservation.enums.PaymentMethod;
+import com.airlinereservation.enums.PaymentStatus;
 import com.airlinereservation.enums.SeatStatus;
+import com.airlinereservation.model.Payment;
+import com.airlinereservation.payment.BankTransferPayment;
+import com.airlinereservation.payment.CardPayment;
+import com.airlinereservation.payment.CashPayment;
+import com.airlinereservation.payment.EWalletPayment;
+import com.airlinereservation.payment.PaymentStrategy;
 import com.airlinereservation.system.AirlineReservationSystem;
 import com.airlinereservation.system.DemoDataSeeder;
 import org.junit.jupiter.api.Test;
@@ -237,5 +245,167 @@ class ReservationGuiControllerTest {
         assertEquals(3, afterReset.airportsCount());
         assertEquals(3, afterReset.scheduledFlightsCount());
         assertEquals(49, afterReset.availableSeatsCount());
+    }
+
+    @Test
+    void listsLoggedInPassengerBookingsAndProjectsTableRows() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        assertThrows(ValidationException.class, controller::getPassengerBookings);
+
+        controller.login("ADM-01", DemoDataSeeder.DEMO_ADMIN_PASSWORD);
+        assertThrows(ValidationException.class, controller::getPassengerBookings);
+        controller.logout();
+
+        controller.login("PAX-01", Person.DEFAULT_PASSWORD);
+        List<Booking> pax1Bookings = controller.getPassengerBookings();
+        assertEquals(2, pax1Bookings.size());
+
+        List<Object[]> rows = controller.toBookingTableRows(pax1Bookings);
+        assertEquals(2, rows.size());
+
+        Object[] confirmedRow = rows.get(0);
+        assertEquals("BK-1", confirmedRow[0]);
+        assertEquals("VN101", confirmedRow[1]);
+        assertEquals("HAN -> SGN", confirmedRow[2]);
+        assertEquals("1A", confirmedRow[3]);
+        assertEquals("3,000,000 VND", confirmedRow[4]);
+        assertEquals(BookingStatus.CONFIRMED, confirmedRow[5]);
+        assertEquals(PaymentStatus.COMPLETED, confirmedRow[6]);
+
+        Object[] pendingRow = rows.get(1);
+        assertEquals("BK-2", pendingRow[0]);
+        assertEquals("VN103", pendingRow[1]);
+        assertEquals("HAN -> SGN", pendingRow[2]);
+        assertEquals("2A, 2B", pendingRow[3]);
+        assertEquals("4,255,000 VND", pendingRow[4]);
+        assertEquals(BookingStatus.PENDING, pendingRow[5]);
+        assertNull(pendingRow[6]);
+
+        assertEquals(7, ReservationGuiController.BOOKING_TABLE_COLUMNS.length);
+
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        assertTrue(controller.getPassengerBookings().isEmpty());
+    }
+
+    @Test
+    void createsStrategiesViaPaymentFactoryProcessesAllFourMethodsAndSupportsFailureRetry() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        assertInstanceOf(CardPayment.class, controller.createPaymentStrategy(PaymentMethod.CREDIT_DEBIT_CARD, "4111-2222", "An"));
+        assertInstanceOf(EWalletPayment.class, controller.createPaymentStrategy(PaymentMethod.E_WALLET, "0901", "MoMo"));
+        assertInstanceOf(BankTransferPayment.class, controller.createPaymentStrategy(PaymentMethod.BANK_TRANSFER, "VCB", "12345"));
+        assertInstanceOf(CashPayment.class, controller.createPaymentStrategy(PaymentMethod.CASH, "CNT-01", "CSH-01"));
+
+        // Requires logged-in passenger owning the booking
+        assertThrows(ValidationException.class, () -> controller.processPayment(
+                "BK-2", PaymentMethod.CASH, "CNT-01", "CSH-01", false));
+
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        assertThrows(ValidationException.class, () -> controller.processPayment(
+                "BK-2", PaymentMethod.CASH, "CNT-01", "CSH-01", false));
+        assertThrows(ValidationException.class, () -> controller.validateBookingPayable("BK-2"));
+
+        Booking cardBooking = controller.bookSeats("FL-01", List.of("1B"));
+        assertEquals(cardBooking, controller.validateBookingPayable(cardBooking.getBookingId()));
+        Booking walletBooking = controller.bookSeats("FL-01", List.of("2B"));
+        Booking bankBooking = controller.bookSeats("FL-01", List.of("3B"));
+        Booking cashBooking = controller.bookSeats("FL-01", List.of("3C"));
+
+        // Simulated payment failure keeps booking PENDING, seats RESERVED, and surfaces FAILED PaymentStatus
+        Payment failed = controller.processPayment(
+                cardBooking.getBookingId(), PaymentMethod.CREDIT_DEBIT_CARD,
+                "4111-2222-3333-4444", "Tran Thi Binh", true
+        );
+        assertEquals(PaymentStatus.FAILED, failed.getStatus());
+        assertEquals(BookingStatus.PENDING, cardBooking.getStatus());
+        assertEquals(SeatStatus.RESERVED, system.findFlightById("FL-01").findSeat("1B").getStatus());
+        assertEquals(PaymentStatus.FAILED, controller.getBookingPaymentStatus(cardBooking));
+
+        // Blank strategy details still fail validation even with simulateFailure=true
+        assertThrows(ValidationException.class, () -> controller.processPayment(
+                cardBooking.getBookingId(), PaymentMethod.CREDIT_DEBIT_CARD, " ", "Tran Thi Binh", true));
+
+        // Successful retry confirms booking and transitions seats to OCCUPIED
+        Payment retryCard = controller.processPayment(
+                cardBooking.getBookingId(), PaymentMethod.CREDIT_DEBIT_CARD,
+                "4111-2222-3333-4444", "Tran Thi Binh", false
+        );
+        assertEquals(PaymentStatus.COMPLETED, retryCard.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, cardBooking.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, system.findFlightById("FL-01").findSeat("1B").getStatus());
+        assertEquals(PaymentStatus.COMPLETED, controller.getBookingPaymentStatus(cardBooking));
+        assertThrows(InvalidStateException.class, () -> controller.validateBookingPayable(cardBooking.getBookingId()));
+
+        // Remaining three PaymentMethod strategies
+        Payment wallet = controller.processPayment(walletBooking.getBookingId(), PaymentMethod.E_WALLET, "0902222222", "MoMo", false);
+        Payment bank = controller.processPayment(bankBooking.getBookingId(), PaymentMethod.BANK_TRANSFER, "Vietcombank", "0123456789", false);
+        Payment cash = controller.processPayment(cashBooking.getBookingId(), PaymentMethod.CASH, "CNT-01", "CSH-01", false);
+
+        assertEquals(PaymentMethod.E_WALLET, wallet.getMethod());
+        assertEquals(PaymentStatus.COMPLETED, wallet.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, walletBooking.getStatus());
+
+        assertEquals(PaymentMethod.BANK_TRANSFER, bank.getMethod());
+        assertEquals(PaymentStatus.COMPLETED, bank.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, bankBooking.getStatus());
+
+        assertEquals(PaymentMethod.CASH, cash.getMethod());
+        assertEquals(PaymentStatus.COMPLETED, cash.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, cashBooking.getStatus());
+
+        // Reset clears tracked failed attempts too
+        controller.login("PAX-01", Person.DEFAULT_PASSWORD);
+        controller.processPayment("BK-2", PaymentMethod.E_WALLET, "0901111111", "ZaloPay", true);
+        assertEquals(PaymentStatus.FAILED, controller.getBookingPaymentStatus(system.findBookingById("BK-2")));
+        controller.resetDemoData();
+        assertNull(controller.getBookingPaymentStatus(system.findBookingById("BK-2")));
+    }
+
+    @Test
+    void checksInAndCancelsOwnedBookingsWithSeatReleaseAndPaymentRefund() {
+        AirlineReservationSystem system = DemoDataSeeder.createSeededSystem();
+        ReservationGuiController controller = new ReservationGuiController(system);
+
+        assertThrows(ValidationException.class, () -> controller.checkInBooking("BK-1"));
+        assertThrows(ValidationException.class, () -> controller.cancelBooking("BK-2"));
+
+        // PAX-02 cannot check in or cancel PAX-01's bookings
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        assertThrows(ValidationException.class, () -> controller.checkInBooking("BK-1"));
+        assertThrows(ValidationException.class, () -> controller.cancelBooking("BK-2"));
+
+        // PAX-01 cancels pending BK-2 -> CANCELLED, seats 2A/2B released to AVAILABLE
+        controller.login("PAX-01", Person.DEFAULT_PASSWORD);
+        assertThrows(InvalidStateException.class, () -> controller.checkInBooking("BK-2"));
+        assertTrue(controller.cancelBooking("BK-2"));
+        Booking bk2 = system.findBookingById("BK-2");
+        assertEquals(BookingStatus.CANCELLED, bk2.getStatus());
+        assertEquals(SeatStatus.AVAILABLE, system.findFlightById("FL-02").findSeat("2A").getStatus());
+        assertEquals(SeatStatus.AVAILABLE, system.findFlightById("FL-02").findSeat("2B").getStatus());
+        assertNull(controller.getBookingPaymentStatus(bk2));
+        assertThrows(InvalidStateException.class, () -> controller.cancelBooking("BK-2"));
+
+        // PAX-01 checks in confirmed BK-1 -> CHECKED_IN, seat 1A remains OCCUPIED, cannot cancel afterwards
+        Booking checkedIn = controller.checkInBooking("BK-1");
+        assertEquals(BookingStatus.CHECKED_IN, checkedIn.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, system.findFlightById("FL-01").findSeat("1A").getStatus());
+        assertThrows(InvalidStateException.class, () -> controller.checkInBooking("BK-1"));
+        assertThrows(InvalidStateException.class, () -> controller.cancelBooking("BK-1"));
+
+        // PAX-02 books, pays, and cancels confirmed booking -> CANCELLED, seat released, payment REFUNDED
+        controller.login("PAX-02", Person.DEFAULT_PASSWORD);
+        Booking paidBooking = controller.bookSeats("FL-01", List.of("1B"));
+        controller.processPayment(paidBooking.getBookingId(), PaymentMethod.CASH, "CNT-01", "CSH-01", false);
+        assertEquals(BookingStatus.CONFIRMED, paidBooking.getStatus());
+        assertEquals(SeatStatus.OCCUPIED, system.findFlightById("FL-01").findSeat("1B").getStatus());
+
+        assertTrue(controller.cancelBooking(paidBooking.getBookingId()));
+        assertEquals(BookingStatus.CANCELLED, paidBooking.getStatus());
+        assertEquals(SeatStatus.AVAILABLE, system.findFlightById("FL-01").findSeat("1B").getStatus());
+        assertEquals(PaymentStatus.REFUNDED, paidBooking.getPayment().getStatus());
+        assertEquals(PaymentStatus.REFUNDED, controller.getBookingPaymentStatus(paidBooking));
     }
 }
