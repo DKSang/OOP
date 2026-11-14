@@ -37,15 +37,15 @@ _Avoid_: SeatBuilder, CabinGenerator
 ### Người dùng & Đặt chỗ
 
 **Person**:
-Khái niệm trừu tượng đại diện cho một cá nhân tương tác với hệ thống, nắm giữ thông tin định danh và liên lạc cơ bản (họ tên, email, số điện thoại).
+Khái niệm trừu tượng đại diện cho một cá nhân tương tác với hệ thống, nắm giữ thông tin định danh, liên lạc cơ bản (họ tên, email, số điện thoại) và thông tin xác thực mật khẩu để đăng nhập theo vai trò.
 _Avoid_: Account, Human
 
 **Passenger**:
-Hành khách sử dụng hệ thống để tìm chuyến bay, thực hiện hoặc yêu cầu hủy đặt vé (`Booking`) và trực tiếp tham gia chuyến bay (bao gồm thông tin ngày sinh, giới tính, hộ chiếu/CCCD và lịch sử đặt chỗ).
+Hành khách sử dụng hệ thống để đăng nhập, tìm chuyến bay, thực hiện hoặc yêu cầu hủy đặt vé (`Booking`) và trực tiếp tham gia chuyến bay (bao gồm thông tin ngày sinh, giới tính, hộ chiếu/CCCD và lịch sử đặt chỗ).
 _Avoid_: Customer, Traveler, Client
 
 **Admin**:
-Quản trị viên hệ thống có quyền quản lý danh mục tàu bay (`Aircraft`), chuyến bay (`Flight`) và giám sát vận hành.
+Quản trị viên hệ thống có quyền đăng nhập vào giao diện điều hành để quản lý danh mục tàu bay (`Aircraft`), chuyến bay (`Flight`) và giám sát toàn bộ đặt chỗ (`Booking`) cùng hành khách (`Passenger`).
 _Avoid_: Manager, Staff, Operator
 
 **Booking**:
@@ -71,5 +71,15 @@ Bộ khởi tạo chịu trách nhiệm tạo bản ghi giao dịch `Payment` v�
 _Avoid_: BillingCreator, TransactionBuilder
 
 **AirlineReservationSystem**:
-Bộ điều phối trung tâm của hệ thống, quản lý danh mục `Flight`, `Aircraft`, `Airport`, `Passenger`, `Booking` và điều phối các luồng nghiệp vụ tìm kiếm chuyến bay, tạo đặt chỗ và hủy đặt chỗ.
+Bộ điều phối trung tâm của hệ thống, quản lý danh mục `Flight`, `Aircraft`, `Airport`, `Passenger`, `Admin`, `Booking` và điều phối các luồng nghiệp vụ xác thực người dùng, tìm kiếm chuyến bay, tạo đặt chỗ, thanh toán và hủy đặt chỗ.
 _Avoid_: FlightManager, SeatManager, BookingManager
+
+### Giao diện & Điều phối Hiển thị (GUI)
+
+**ReservationGuiController**:
+Bộ điều phối giao diện người dùng đóng vai trò cầu nối giữa các màn hình hiển thị và `AirlineReservationSystem`, quản lý phiên đăng nhập hiện hành (`Person`) và chuyển đổi dữ liệu nghiệp vụ phục vụ hiển thị mà không chứa thành phần đồ họa cụ thể.
+_Avoid_: GuiManager, FormHelper, SwingService
+
+**DemoDataSeeder**:
+Bộ khởi tạo dữ liệu mẫu tiêu chuẩn cho hệ thống (`Airport`, `Aircraft`, `Flight`, `Passenger`, `Admin`, `Booking`), phục vụ khởi chạy nhanh và khôi phục trạng thái trình diễn trên giao diện.
+_Avoid_: MockDatabase, DummyLoader

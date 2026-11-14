@@ -16,17 +16,7 @@ public class Admin extends Person {
                  String phoneNumber,
                  String staffCode,
                  String department) {
-        this(id, fullName, email, phoneNumber, staffCode, department, DEFAULT_PASSWORD);
-    }
-
-    public Admin(String id,
-                 String fullName,
-                 String email,
-                 String phoneNumber,
-                 String staffCode,
-                 String department,
-                 String password) {
-        super(id, fullName, email, phoneNumber, password);
+        super(id, fullName, email, phoneNumber);
         this.staffCode = ValidationException.requireNonBlank(staffCode, "Staff code");
         this.department = ValidationException.requireNonBlank(department, "Department");
     }
