@@ -194,6 +194,15 @@ public final class AnthropicTheme {
         return badge;
     }
 
+    public static JLabel createOutlinedBadgeLabel(String text, Color background, Color foreground, Color borderColor) {
+        JLabel badge = createBadgeLabel(text, background, foreground);
+        badge.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(borderColor, 1),
+                BorderFactory.createEmptyBorder(4, SPACE_12, 4, SPACE_12)
+        ));
+        return badge;
+    }
+
     private static String resolveFontFamily(String fallback, String... preferred) {
         for (String candidate : preferred) {
             if (AVAILABLE_FONTS.contains(candidate)) {
