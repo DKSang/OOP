@@ -1,0 +1,3 @@
+# Chuyển đổi lớp hiển thị GUI từ Java Swing sang JavaFX 25
+
+Để khắc phục hạn chế thẩm mỹ của Java Swing mặc định (Metal Look & Feel) và tận dụng khả năng định kiểu CSS hiện đại theo đúng tinh thần ví dụ MVC JavaFX trong `Chapter_10.5.pdf`, nhóm chuyển toàn bộ lớp View của Milestone 6 sang **JavaFX 25** (`org.openjfx:javafx-controls`) với bảng định kiểu `anthropic-theme.css` bám sát các token màu sắc, bo góc và typography trong `DESIGN.md`. Quyết định tách biệt `ReservationGuiController` theo kiến trúc MVC / Passive View ở `ADR-0005` được giữ nguyên toàn vẹn: toàn bộ nghiệp vụ, quản lý phiên đăng nhập và 77 kiểm thử JUnit 5 không thay đổi hay phụ thuộc vào thành phần đồ họa JavaFX.

@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Passive-View controller mediating between Swing views and {@link AirlineReservationSystem}.
+ * Passive-View controller mediating between JavaFX views and {@link AirlineReservationSystem}.
  */
 public class ReservationGuiController {
 

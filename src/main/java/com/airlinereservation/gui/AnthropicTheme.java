@@ -1,214 +1,149 @@
 package com.airlinereservation.gui;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.border.Border;
-import javax.swing.text.JTextComponent;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.GraphicsEnvironment;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Control;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.DialogPane;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextInputControl;
+import javafx.stage.Window;
+import javafx.util.StringConverter;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Objects;
 
 /**
- * Centralized visual design tokens and Swing styling helpers derived from {@code DESIGN.md}.
+ * Centralized JavaFX theme helper and dialog utilities aligned with {@code DESIGN.md}.
  */
 public final class AnthropicTheme {
 
-    public static final Color PRIMARY_SURFACE = Color.decode("#FAF9F5");
-    public static final Color TERTIARY_SURFACE = Color.decode("#E3DACC");
-    public static final Color PRIMARY_TEXT = Color.decode("#141413");
-    public static final Color PRIMARY_CTA_BG = PRIMARY_TEXT;
-    public static final Color PRIMARY_CTA_TEXT = PRIMARY_SURFACE;
-    public static final Color WARM_ACCENT = Color.decode("#D97757");
-    public static final Color EARTH_ACCENT = Color.decode("#C6613F");
-    public static final Color SAGE_ACCENT = Color.decode("#788C5D");
-    public static final Color COOL_ACCENT = Color.decode("#6A9BCC");
-    public static final Color SOFT_BLUSH = Color.decode("#EBCECE");
-    public static final Color SOFT_SEAFOAM = Color.decode("#BCD1CA");
-    public static final Color PRIMARY_BORDER = Color.decode("#C6C4BA");
-    public static final Color SECONDARY_BORDER = Color.decode("#B0AEA5");
-    public static final Color NEUTRAL_DARK = Color.decode("#73726C");
-    public static final Color NEUTRAL_MUTED = Color.decode("#87867F");
+    public static final String STYLESHEET = Objects.requireNonNull(
+            AnthropicTheme.class.getResource("anthropic-theme.css")
+    ).toExternalForm();
 
-    public static final int SPACE_8 = 8;
-    public static final int SPACE_12 = 12;
-    public static final int SPACE_16 = 16;
-    public static final int SPACE_24 = 24;
-    public static final int SPACE_32 = 32;
-    public static final int SPACE_48 = 48;
+    public static final double SPACE_8 = 8.0;
+    public static final double SPACE_12 = 12.0;
+    public static final double SPACE_16 = 16.0;
+    public static final double SPACE_24 = 24.0;
 
-    private static final Set<String> AVAILABLE_FONTS = Arrays.stream(
-            GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()
-    ).collect(Collectors.toUnmodifiableSet());
-
-    public static final String SERIF_FAMILY = resolveFontFamily(Font.SERIF, "Anthropic Serif", "Georgia", "Times New Roman");
-    public static final String SANS_FAMILY = resolveFontFamily(Font.SANS_SERIF, "Anthropic Sans", "Segoe UI", "Roboto", "Helvetica", "Arial");
+    private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private AnthropicTheme() {
     }
 
-    public static Font serifFont(int style, int size) {
-        return new Font(SERIF_FAMILY, style, size);
+    public static void applyStylesheet(Scene scene) {
+        if (!scene.getStylesheets().contains(STYLESHEET)) {
+            scene.getStylesheets().add(STYLESHEET);
+        }
     }
 
-    public static Font sansFont(int style, int size) {
-        return new Font(SANS_FAMILY, style, size);
+    public static Label createHeadingLabel(String text, String sizeStyleClass) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("heading-serif", sizeStyleClass);
+        return label;
     }
 
-    public static Border cardBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(PRIMARY_BORDER, 1),
-                BorderFactory.createEmptyBorder(SPACE_24, SPACE_24, SPACE_24, SPACE_24)
-        );
+    public static Label createSectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("section-label");
+        return label;
     }
 
-    public static Border subtleSectionBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(SECONDARY_BORDER, 1),
-                BorderFactory.createEmptyBorder(SPACE_16, SPACE_24, SPACE_16, SPACE_24)
-        );
+    public static Label createFieldLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("field-label");
+        return label;
     }
 
-    public static Border inputBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(PRIMARY_BORDER, 1),
-                BorderFactory.createEmptyBorder(SPACE_8, SPACE_12, SPACE_8, SPACE_12)
-        );
+    public static Label createMutedLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("muted-label");
+        return label;
     }
 
-    public static Border focusedInputBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(WARM_ACCENT, 1),
-                BorderFactory.createEmptyBorder(SPACE_8, SPACE_12, SPACE_8, SPACE_12)
-        );
+    public static Label createBadgeLabel(String text, String badgeStyleClass) {
+        Label badge = new Label(text);
+        badge.getStyleClass().addAll("badge", badgeStyleClass);
+        return badge;
     }
 
-    public static Border spacing(int vertical, int horizontal) {
-        return BorderFactory.createEmptyBorder(vertical, horizontal, vertical, horizontal);
+    public static Button createPrimaryButton(String text) {
+        Button button = new Button(text);
+        button.getStyleClass().add("btn-primary");
+        return button;
     }
 
-    public static void styleCard(JPanel panel) {
-        panel.setBackground(PRIMARY_SURFACE);
-        panel.setBorder(cardBorder());
+    public static Button createSecondaryButton(String text) {
+        Button button = new Button(text);
+        button.getStyleClass().add("btn-secondary");
+        return button;
     }
 
-    public static void styleSubtlePanel(JPanel panel) {
-        panel.setBackground(TERTIARY_SURFACE);
-        panel.setBorder(subtleSectionBorder());
+    public static void styleTextInput(TextInputControl input) {
+        input.getStyleClass().add("input-field");
+        input.setPrefHeight(40);
     }
 
-    public static void stylePrimaryButton(JButton button) {
-        button.setFont(sansFont(Font.PLAIN, 16));
-        button.setBackground(PRIMARY_CTA_BG);
-        button.setForeground(PRIMARY_CTA_TEXT);
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(PRIMARY_CTA_BG, 1),
-                BorderFactory.createEmptyBorder(SPACE_8, SPACE_16, SPACE_8, SPACE_16)
-        ));
+    public static void styleComboBox(ComboBox<?> comboBox) {
+        comboBox.setPrefHeight(40);
+        comboBox.setMaxWidth(Double.MAX_VALUE);
     }
 
-    public static void styleSecondaryButton(JButton button) {
-        button.setFont(serifFont(Font.PLAIN, 20));
-        button.setForeground(PRIMARY_TEXT);
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createEmptyBorder(SPACE_8, SPACE_16, SPACE_8, SPACE_16));
-    }
-
-    public static void styleTextInput(JTextComponent field) {
-        field.setFont(sansFont(Font.PLAIN, 17));
-        field.setBackground(PRIMARY_SURFACE);
-        field.setForeground(PRIMARY_TEXT);
-        field.setCaretColor(PRIMARY_TEXT);
-        field.setBorder(inputBorder());
-        field.addFocusListener(new FocusAdapter() {
+    public static DatePicker createIsoDatePicker(LocalDate initialDate) {
+        DatePicker picker = new DatePicker(initialDate);
+        picker.setPrefHeight(40);
+        picker.setMaxWidth(Double.MAX_VALUE);
+        picker.setPromptText("YYYY-MM-DD");
+        picker.setConverter(new StringConverter<>() {
             @Override
-            public void focusGained(FocusEvent e) {
-                field.setBorder(focusedInputBorder());
+            public String toString(LocalDate date) {
+                return date == null ? "" : ISO_DATE.format(date);
             }
 
             @Override
-            public void focusLost(FocusEvent e) {
-                field.setBorder(inputBorder());
+            public LocalDate fromString(String text) {
+                if (text == null || text.isBlank()) {
+                    return null;
+                }
+                try {
+                    return LocalDate.parse(text.trim(), ISO_DATE);
+                } catch (DateTimeParseException ex) {
+                    return null;
+                }
             }
         });
+        return picker;
     }
 
-    public static void styleComboBox(JComboBox<?> comboBox) {
-        comboBox.setFont(sansFont(Font.PLAIN, 14));
-        comboBox.setBackground(PRIMARY_SURFACE);
-        comboBox.setForeground(PRIMARY_TEXT);
-        comboBox.setBorder(BorderFactory.createLineBorder(PRIMARY_BORDER, 1));
+    public static void showInfo(Window owner, String title, String message) {
+        showAlert(Alert.AlertType.INFORMATION, owner, title, message);
     }
 
-    public static JLabel createHeadingLabel(String text, int size) {
-        JLabel label = new JLabel(text);
-        label.setFont(serifFont(Font.PLAIN, size));
-        label.setForeground(PRIMARY_TEXT);
-        return label;
+    public static void showWarning(Window owner, String title, String message) {
+        showAlert(Alert.AlertType.WARNING, owner, title, message);
     }
 
-    public static JLabel createSectionLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(sansFont(Font.BOLD, 16));
-        label.setForeground(PRIMARY_TEXT);
-        return label;
+    public static void showError(Window owner, String title, String message) {
+        showAlert(Alert.AlertType.ERROR, owner, title, message);
     }
 
-    public static JLabel createFieldLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(sansFont(Font.PLAIN, 12));
-        label.setForeground(PRIMARY_TEXT);
-        return label;
-    }
-
-    public static JLabel createMutedLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(sansFont(Font.PLAIN, 13));
-        label.setForeground(NEUTRAL_DARK);
-        return label;
-    }
-
-    public static JLabel createBadgeLabel(String text, Color background, Color foreground) {
-        JLabel badge = new JLabel(text);
-        badge.setOpaque(true);
-        badge.setBackground(background);
-        badge.setForeground(foreground);
-        badge.setFont(sansFont(Font.BOLD, 12));
-        badge.setBorder(BorderFactory.createEmptyBorder(4, SPACE_12, 4, SPACE_12));
-        return badge;
-    }
-
-    public static JLabel createOutlinedBadgeLabel(String text, Color background, Color foreground, Color borderColor) {
-        JLabel badge = createBadgeLabel(text, background, foreground);
-        badge.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(borderColor, 1),
-                BorderFactory.createEmptyBorder(4, SPACE_12, 4, SPACE_12)
-        ));
-        return badge;
-    }
-
-    private static String resolveFontFamily(String fallback, String... preferred) {
-        for (String candidate : preferred) {
-            if (AVAILABLE_FONTS.contains(candidate)) {
-                return candidate;
-            }
+    private static void showAlert(Alert.AlertType type, Window owner, String title, String message) {
+        Alert alert = new Alert(type);
+        if (owner != null) {
+            alert.initOwner(owner);
         }
-        return fallback;
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        DialogPane pane = alert.getDialogPane();
+        pane.getStylesheets().add(STYLESHEET);
+        pane.setMinWidth(Control.USE_PREF_SIZE);
+        alert.showAndWait();
     }
 }

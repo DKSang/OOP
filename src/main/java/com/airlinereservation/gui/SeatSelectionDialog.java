@@ -7,34 +7,33 @@ import com.airlinereservation.model.BusinessSeat;
 import com.airlinereservation.model.EconomySeat;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Seat;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JToggleButton;
-import javax.swing.SwingConstants;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.Window;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Modal dialog rendering a flight's cabin seat map in a grid with live fare preview.
+ * Modal JavaFX dialog rendering a flight's cabin seat map in a responsive grid with live fare preview.
  */
-public class SeatSelectionDialog extends JDialog {
+public class SeatSelectionDialog extends Stage {
 
     private static final int CABIN_COLUMNS = 4;
 
@@ -42,152 +41,138 @@ public class SeatSelectionDialog extends JDialog {
     private final Flight flight;
     private final Set<String> selectedSeatNumbers = new LinkedHashSet<>();
 
-    private final JLabel selectedSeatsLabel = AnthropicTheme.createSectionLabel("");
-    private final JLabel totalPriceLabel = AnthropicTheme.createHeadingLabel("", 18);
+    private final Label selectedSeatsLabel = AnthropicTheme.createSectionLabel("");
+    private final Label totalPriceLabel = AnthropicTheme.createHeadingLabel("", "heading-md");
     private Booking createdBooking;
 
     public SeatSelectionDialog(Window owner, ReservationGuiController controller, Flight flight) {
-        super(owner, "Select Seats - " + flight.getFlightNumber(), ModalityType.APPLICATION_MODAL);
         this.controller = controller;
         this.flight = flight;
 
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        getContentPane().setBackground(AnthropicTheme.PRIMARY_SURFACE);
-        setLayout(new BorderLayout(AnthropicTheme.SPACE_16, AnthropicTheme.SPACE_16));
+        setTitle("Select Seats - " + flight.getFlightNumber());
+        initOwner(owner);
+        initModality(Modality.APPLICATION_MODAL);
+        setMinWidth(780);
+        setMinHeight(640);
 
-        JPanel root = new JPanel(new BorderLayout(AnthropicTheme.SPACE_16, AnthropicTheme.SPACE_16));
-        root.setBackground(AnthropicTheme.PRIMARY_SURFACE);
-        root.setBorder(AnthropicTheme.spacing(AnthropicTheme.SPACE_24, AnthropicTheme.SPACE_24));
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(AnthropicTheme.SPACE_24));
 
         // Header + legend
-        JPanel headerPanel = new JPanel(new BorderLayout(0, AnthropicTheme.SPACE_12));
-        headerPanel.setBackground(AnthropicTheme.PRIMARY_SURFACE);
-
-        JPanel titleBlock = new JPanel(new GridLayout(0, 1, 0, AnthropicTheme.SPACE_8));
-        titleBlock.setBackground(AnthropicTheme.PRIMARY_SURFACE);
-
-        JLabel heading = AnthropicTheme.createHeadingLabel(
-                "Cabin Seat Map - " + flight.getFlightNumber(), 22
-        );
-        JLabel routeInfo = AnthropicTheme.createMutedLabel(
+        Label heading = AnthropicTheme.createHeadingLabel("Cabin Seat Map - " + flight.getFlightNumber(), "heading-lg");
+        Label routeInfo = AnthropicTheme.createMutedLabel(
                 flight.getDepartureAirport().getAirportCode()
                         + " -> " + flight.getArrivalAirport().getAirportCode()
                         + "  |  Aircraft: " + flight.getAircraft().getModel()
                         + "  |  Base Fare: " + ReservationGuiController.formatCurrency(flight.getBasePrice())
         );
 
-        titleBlock.add(heading);
-        titleBlock.add(routeInfo);
+        VBox headerPanel = new VBox(AnthropicTheme.SPACE_12, new VBox(AnthropicTheme.SPACE_8, heading, routeInfo), buildLegendRow());
+        BorderPane.setMargin(headerPanel, new Insets(0, 0, AnthropicTheme.SPACE_16, 0));
 
-        headerPanel.add(titleBlock, BorderLayout.NORTH);
-        headerPanel.add(buildLegendRow(), BorderLayout.CENTER);
+        // Seat grid
+        GridPane seatGrid = new GridPane();
+        seatGrid.setHgap(AnthropicTheme.SPACE_12);
+        seatGrid.setVgap(AnthropicTheme.SPACE_12);
+        seatGrid.setPadding(new Insets(AnthropicTheme.SPACE_16));
 
-        // Seat Grid
-        JPanel seatGrid = new JPanel(new GridLayout(0, CABIN_COLUMNS, AnthropicTheme.SPACE_12, AnthropicTheme.SPACE_12));
-        seatGrid.setBackground(AnthropicTheme.PRIMARY_SURFACE);
-        seatGrid.setBorder(AnthropicTheme.spacing(AnthropicTheme.SPACE_8, AnthropicTheme.SPACE_8));
-
-        for (Seat seat : controller.getSeatsForFlight(flight.getFlightId())) {
-            seatGrid.add(createSeatToggleButton(seat));
+        for (int c = 0; c < CABIN_COLUMNS; c++) {
+            ColumnConstraints col = new ColumnConstraints();
+            col.setPercentWidth(100.0 / CABIN_COLUMNS);
+            col.setHgrow(Priority.ALWAYS);
+            seatGrid.getColumnConstraints().add(col);
         }
 
-        JScrollPane seatScrollPane = new JScrollPane(seatGrid);
-        seatScrollPane.setBorder(BorderFactory.createLineBorder(AnthropicTheme.PRIMARY_BORDER, 1));
-        seatScrollPane.getViewport().setBackground(AnthropicTheme.PRIMARY_SURFACE);
-        seatScrollPane.setPreferredSize(new Dimension(680, 360));
+        List<Seat> seats = controller.getSeatsForFlight(flight.getFlightId());
+        for (int i = 0; i < seats.size(); i++) {
+            seatGrid.add(createSeatToggleButton(seats.get(i)), i % CABIN_COLUMNS, i / CABIN_COLUMNS);
+        }
 
-        // Summary & Actions Footer
-        JPanel footerPanel = new JPanel(new BorderLayout(AnthropicTheme.SPACE_16, AnthropicTheme.SPACE_12));
-        AnthropicTheme.styleSubtlePanel(footerPanel);
+        ScrollPane seatScrollPane = new ScrollPane(seatGrid);
+        seatScrollPane.getStyleClass().add("seat-scroll");
+        seatScrollPane.setFitToWidth(true);
+        seatScrollPane.setPrefViewportHeight(360);
 
-        JPanel summaryPanel = new JPanel();
-        summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
-        summaryPanel.setBackground(AnthropicTheme.TERTIARY_SURFACE);
+        // Footer summary & actions
+        VBox summaryPanel = new VBox(AnthropicTheme.SPACE_8, selectedSeatsLabel, totalPriceLabel);
+        summaryPanel.setAlignment(Pos.CENTER_LEFT);
 
-        summaryPanel.add(selectedSeatsLabel);
-        summaryPanel.add(Box.createVerticalStrut(AnthropicTheme.SPACE_8));
-        summaryPanel.add(totalPriceLabel);
+        Button cancelButton = AnthropicTheme.createSecondaryButton("Cancel");
+        cancelButton.setOnAction(e -> close());
 
-        JPanel actionButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, AnthropicTheme.SPACE_12, 0));
-        actionButtons.setBackground(AnthropicTheme.TERTIARY_SURFACE);
+        Button confirmButton = AnthropicTheme.createPrimaryButton("Confirm Booking");
+        confirmButton.setOnAction(e -> confirmBooking());
 
-        JButton cancelButton = new JButton("Cancel");
-        AnthropicTheme.styleSecondaryButton(cancelButton);
-        cancelButton.addActionListener(e -> dispose());
+        HBox actionButtons = new HBox(AnthropicTheme.SPACE_12, cancelButton, confirmButton);
+        actionButtons.setAlignment(Pos.CENTER_RIGHT);
 
-        JButton confirmButton = new JButton("Confirm Booking");
-        AnthropicTheme.stylePrimaryButton(confirmButton);
-        confirmButton.addActionListener(e -> confirmBooking());
+        BorderPane footerPanel = new BorderPane();
+        footerPanel.getStyleClass().add("subtle-panel");
+        footerPanel.setLeft(summaryPanel);
+        footerPanel.setRight(actionButtons);
+        BorderPane.setMargin(footerPanel, new Insets(AnthropicTheme.SPACE_16, 0, 0, 0));
 
-        actionButtons.add(cancelButton);
-        actionButtons.add(confirmButton);
+        root.setTop(headerPanel);
+        root.setCenter(seatScrollPane);
+        root.setBottom(footerPanel);
 
-        footerPanel.add(summaryPanel, BorderLayout.CENTER);
-        footerPanel.add(actionButtons, BorderLayout.EAST);
-
-        root.add(headerPanel, BorderLayout.NORTH);
-        root.add(seatScrollPane, BorderLayout.CENTER);
-        root.add(footerPanel, BorderLayout.SOUTH);
-
-        add(root, BorderLayout.CENTER);
         updateSelectionSummary();
-        pack();
-        setMinimumSize(new Dimension(760, 560));
-        setLocationRelativeTo(owner);
+
+        Scene scene = new Scene(root, 840, 680);
+        AnthropicTheme.applyStylesheet(scene);
+        setScene(scene);
     }
 
     public Booking getCreatedBooking() {
         return createdBooking;
     }
 
-    private JPanel buildLegendRow() {
-        JPanel legend = new JPanel(new FlowLayout(FlowLayout.LEFT, AnthropicTheme.SPACE_8, AnthropicTheme.SPACE_8));
-        legend.setBackground(AnthropicTheme.PRIMARY_SURFACE);
-
-        legend.add(AnthropicTheme.createOutlinedBadgeLabel(
-                "Business (Lounge)", AnthropicTheme.TERTIARY_SURFACE, AnthropicTheme.PRIMARY_TEXT, AnthropicTheme.WARM_ACCENT));
-        legend.add(AnthropicTheme.createBadgeLabel(
-                "Economy+ Legroom", AnthropicTheme.SOFT_SEAFOAM, AnthropicTheme.PRIMARY_TEXT));
-        legend.add(AnthropicTheme.createOutlinedBadgeLabel(
-                "Economy", AnthropicTheme.PRIMARY_SURFACE, AnthropicTheme.PRIMARY_TEXT, AnthropicTheme.PRIMARY_BORDER));
-        legend.add(AnthropicTheme.createBadgeLabel(
-                "Selected", AnthropicTheme.WARM_ACCENT, AnthropicTheme.PRIMARY_CTA_TEXT));
-        legend.add(AnthropicTheme.createBadgeLabel(
-                "Reserved", AnthropicTheme.SOFT_BLUSH, AnthropicTheme.NEUTRAL_DARK));
-        legend.add(AnthropicTheme.createBadgeLabel(
-                "Occupied", AnthropicTheme.PRIMARY_BORDER, AnthropicTheme.NEUTRAL_DARK));
+    private FlowPane buildLegendRow() {
+        FlowPane legend = new FlowPane(AnthropicTheme.SPACE_8, AnthropicTheme.SPACE_8);
+        legend.getChildren().addAll(
+                AnthropicTheme.createBadgeLabel("Business (Lounge)", "badge-business"),
+                AnthropicTheme.createBadgeLabel("Economy+ Legroom", "badge-legroom"),
+                AnthropicTheme.createBadgeLabel("Economy", "badge-economy"),
+                AnthropicTheme.createBadgeLabel("Selected", "badge-selected"),
+                AnthropicTheme.createBadgeLabel("Reserved", "badge-reserved"),
+                AnthropicTheme.createBadgeLabel("Occupied", "badge-occupied")
+        );
         return legend;
     }
 
-    private JToggleButton createSeatToggleButton(Seat seat) {
+    private ToggleButton createSeatToggleButton(Seat seat) {
         SeatPresentation presentation = describeSeat(seat);
-        JToggleButton button = new JToggleButton();
-        button.setLayout(new BorderLayout());
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(145, 76));
-        button.setToolTipText(presentation.tooltip());
 
-        JLabel tileLabel = new JLabel(presentation.buttonHtml(), SwingConstants.CENTER);
-        tileLabel.setFont(AnthropicTheme.sansFont(Font.PLAIN, 12));
-        button.add(tileLabel, BorderLayout.CENTER);
+        Label codeLabel = new Label(seat.getSeatNumber());
+        codeLabel.getStyleClass().add("seat-code");
+
+        Label metaLabel = new Label(presentation.tierLine());
+        metaLabel.getStyleClass().add("seat-meta");
+
+        Label priceLabel = new Label(presentation.statusOrPrice());
+        priceLabel.getStyleClass().add("seat-price");
+
+        VBox content = new VBox(4, codeLabel, metaLabel, priceLabel);
+        content.setAlignment(Pos.CENTER);
+
+        ToggleButton button = new ToggleButton();
+        button.setGraphic(content);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setPrefHeight(84);
+        button.getStyleClass().addAll("seat-tile", presentation.tileStyleClass());
+        button.setTooltip(new Tooltip(presentation.tooltip()));
 
         if (!seat.isAvailable()) {
-            button.setEnabled(false);
-            applySeatTileStyle(button, tileLabel, seat, presentation, false);
+            button.setDisable(true);
             return button;
         }
 
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        applySeatTileStyle(button, tileLabel, seat, presentation, false);
-        button.addItemListener(e -> {
-            if (button.isSelected()) {
+        button.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            if (isSelected) {
                 selectedSeatNumbers.add(seat.getSeatNumber());
             } else {
                 selectedSeatNumbers.remove(seat.getSeatNumber());
             }
-            applySeatTileStyle(button, tileLabel, seat, presentation, button.isSelected());
             updateSelectionSummary();
         });
         return button;
@@ -199,64 +184,33 @@ public class SeatSelectionDialog extends JDialog {
 
         String tierLine;
         String tooltipDetail;
-        Color baseBg;
-        Color baseBorder;
+        String tileStyleClass;
 
         if (seat instanceof BusinessSeat businessSeat) {
             String loungeTag = businessSeat.hasLoungeAccess() ? " · Lounge" : "";
             tierLine = "Business x" + businessSeat.getPriceMultiplier() + loungeTag;
             tooltipDetail = "Multiplier: " + businessSeat.getPriceMultiplier()
                     + "x | Lounge Access: " + (businessSeat.hasLoungeAccess() ? "Yes" : "No");
-            baseBg = AnthropicTheme.TERTIARY_SURFACE;
-            baseBorder = AnthropicTheme.WARM_ACCENT;
+            tileStyleClass = seat.isAvailable() ? "seat-business" : unavailableClass(seat);
         } else if (seat instanceof EconomySeat economySeat && economySeat.hasExtraLegroom()) {
             tierLine = "Economy+ Legroom";
             tooltipDetail = "Extra Legroom";
-            baseBg = AnthropicTheme.SOFT_SEAFOAM;
-            baseBorder = AnthropicTheme.SAGE_ACCENT;
+            tileStyleClass = seat.isAvailable() ? "seat-legroom" : unavailableClass(seat);
         } else {
             tierLine = "Economy";
             tooltipDetail = "Standard Cabin";
-            baseBg = AnthropicTheme.PRIMARY_SURFACE;
-            baseBorder = AnthropicTheme.PRIMARY_BORDER;
+            tileStyleClass = seat.isAvailable() ? "seat-economy" : unavailableClass(seat);
         }
 
         String statusOrPrice = seat.isAvailable() ? priceText : seat.getStatus().name();
-        String html = "<html><center><b>" + seat.getSeatNumber() + "</b><br>"
-                + tierLine + "<br>"
-                + statusOrPrice + "</center></html>";
-
         String tooltip = seat.getSeatNumber() + " (" + seat.getSeatType() + ", " + seat.getStatus() + ") - "
                 + priceText + " | " + tooltipDetail;
 
-        return new SeatPresentation(html, tooltip, baseBg, baseBorder);
+        return new SeatPresentation(tierLine, statusOrPrice, tooltip, tileStyleClass);
     }
 
-    private void applySeatTileStyle(JToggleButton button,
-                                    JLabel tileLabel,
-                                    Seat seat,
-                                    SeatPresentation presentation,
-                                    boolean selected) {
-        if (!seat.isAvailable()) {
-            Color disabledBg = seat.getStatus() == SeatStatus.RESERVED
-                    ? AnthropicTheme.SOFT_BLUSH
-                    : AnthropicTheme.PRIMARY_BORDER;
-            button.setBackground(disabledBg);
-            tileLabel.setForeground(AnthropicTheme.NEUTRAL_DARK);
-            button.setBorder(BorderFactory.createLineBorder(AnthropicTheme.SECONDARY_BORDER, 1));
-            return;
-        }
-
-        if (selected) {
-            button.setBackground(AnthropicTheme.WARM_ACCENT);
-            tileLabel.setForeground(AnthropicTheme.PRIMARY_CTA_TEXT);
-            button.setBorder(BorderFactory.createLineBorder(AnthropicTheme.EARTH_ACCENT, 2));
-            return;
-        }
-
-        button.setBackground(presentation.baseBg());
-        tileLabel.setForeground(AnthropicTheme.PRIMARY_TEXT);
-        button.setBorder(BorderFactory.createLineBorder(presentation.baseBorder(), 1));
+    private static String unavailableClass(Seat seat) {
+        return seat.getStatus() == SeatStatus.RESERVED ? "seat-reserved" : "seat-occupied";
     }
 
     private void updateSelectionSummary() {
@@ -277,26 +231,20 @@ public class SeatSelectionDialog extends JDialog {
         try {
             Booking booking = controller.bookSeats(flight.getFlightId(), seatsToBook);
             this.createdBooking = booking;
-            JOptionPane.showMessageDialog(
+            AnthropicTheme.showInfo(
                     this,
+                    "Booking Hold Confirmed",
                     "Booking " + booking.getBookingId() + " created (" + booking.getStatus() + ").\n"
                             + "Flight: " + flight.getFlightNumber() + "\n"
                             + "Seats: " + String.join(", ", seatsToBook) + "\n"
-                            + "Total Fare: " + ReservationGuiController.formatCurrency(booking.getTotalPrice()),
-                    "Booking Hold Confirmed",
-                    JOptionPane.INFORMATION_MESSAGE
+                            + "Total Fare: " + ReservationGuiController.formatCurrency(booking.getTotalPrice())
             );
-            dispose();
+            close();
         } catch (AirlineReservationException ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    ex.getMessage(),
-                    "Seat Booking Failed",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            AnthropicTheme.showError(this, "Seat Booking Failed", ex.getMessage());
         }
     }
 
-    private record SeatPresentation(String buttonHtml, String tooltip, Color baseBg, Color baseBorder) {
+    private record SeatPresentation(String tierLine, String statusOrPrice, String tooltip, String tileStyleClass) {
     }
 }
