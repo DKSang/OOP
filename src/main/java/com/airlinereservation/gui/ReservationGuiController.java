@@ -93,6 +93,39 @@ public class ReservationGuiController {
         return currentUser instanceof Admin;
     }
 
+    public String generateNextPassengerId() {
+        Set<String> existingIds = system.getPassengers().stream()
+                .map(p -> p.getId().toUpperCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        int seq = system.getPassengers().size() + 1;
+        while (true) {
+            String candidate = String.format(Locale.ROOT, "PAX-%02d", seq);
+            if (!existingIds.contains(candidate)) {
+                return candidate;
+            }
+            seq++;
+        }
+    }
+
+    public Passenger registerPassenger(String fullName,
+                                       String email,
+                                       String phoneNumber,
+                                       String dateOfBirthText,
+                                       String gender,
+                                       String passportOrId,
+                                       String password) {
+        return registerPassenger(
+                generateNextPassengerId(),
+                fullName,
+                email,
+                phoneNumber,
+                dateOfBirthText,
+                gender,
+                passportOrId,
+                password
+        );
+    }
+
     public Passenger registerPassenger(String id,
                                        String fullName,
                                        String email,

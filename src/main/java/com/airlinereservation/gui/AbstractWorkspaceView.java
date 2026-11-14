@@ -10,7 +10,9 @@ import com.airlinereservation.model.Person;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
@@ -20,6 +22,9 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
@@ -29,7 +34,8 @@ import java.util.Locale;
 import java.util.function.Function;
 
 /**
- * Shared role-workspace shell providing an Arbitrum Hero Gradient banner and segmented pill tabs.
+ * Shared role-workspace shell providing a compact Arbitrum Command Header, inline feedback bar,
+ * and segmented pill tabs that maximize vertical space for explorer tables.
  */
 abstract class AbstractWorkspaceView extends BorderPane {
 
@@ -38,6 +44,10 @@ abstract class AbstractWorkspaceView extends BorderPane {
     private final Label welcomeLabel;
     private final String defaultTitle;
 
+    private final HBox noticeBanner = new HBox(ArbitrumTheme.SPACE_12);
+    private final Label noticeBadgeLabel = ArbitrumTheme.createBadgeLabel("INFO", "badge-passenger");
+    private final Label noticeMessageLabel = new Label();
+
     protected AbstractWorkspaceView(ReservationGuiController controller,
                                     String eyebrow,
                                     String defaultTitle,
@@ -45,7 +55,7 @@ abstract class AbstractWorkspaceView extends BorderPane {
         this.controller = controller;
         this.defaultTitle = defaultTitle;
 
-        setPadding(new Insets(ArbitrumTheme.SPACE_24, ArbitrumTheme.SPACE_32, ArbitrumTheme.SPACE_24, ArbitrumTheme.SPACE_32));
+        setPadding(new Insets(16, ArbitrumTheme.SPACE_24, 16, ArbitrumTheme.SPACE_24));
 
         Label eyebrowLabel = ArbitrumTheme.createCyanEyebrowLabel(eyebrow);
         welcomeLabel = ArbitrumTheme.createDisplayTitle(defaultTitle, "display-lg");
@@ -53,14 +63,23 @@ abstract class AbstractWorkspaceView extends BorderPane {
 
         Label noteLabel = ArbitrumTheme.createHeroSubtitle(subtitle);
 
-        VBox banner = new VBox(ArbitrumTheme.SPACE_8, eyebrowLabel, welcomeLabel, noteLabel);
-        banner.getStyleClass().add("hero-banner");
-        BorderPane.setMargin(banner, new Insets(0, 0, ArbitrumTheme.SPACE_24, 0));
+        VBox leftCopy = new VBox(4, eyebrowLabel, welcomeLabel, noteLabel);
+        leftCopy.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(leftCopy, Priority.ALWAYS);
+
+        BorderPane banner = new BorderPane();
+        banner.getStyleClass().add("workspace-banner");
+        banner.setLeft(leftCopy);
+
+        configureNoticeBanner();
+
+        VBox topStack = new VBox(ArbitrumTheme.SPACE_12, banner, noticeBanner);
+        BorderPane.setMargin(topStack, new Insets(0, 0, ArbitrumTheme.SPACE_12, 0));
 
         tabs.getStyleClass().add("workspace-tabs");
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-        setTop(banner);
+        setTop(topStack);
         setCenter(tabs);
     }
 
@@ -68,12 +87,67 @@ abstract class AbstractWorkspaceView extends BorderPane {
         Person user = controller.getCurrentUser();
         String title = user != null ? formatWelcomeTitle(user) : defaultTitle;
         welcomeLabel.setText(title.toUpperCase(Locale.ROOT));
+        hideInlineNotice();
     }
 
     protected abstract String formatWelcomeTitle(Person user);
 
     protected Window ownerWindow() {
         return getScene() == null ? null : getScene().getWindow();
+    }
+
+    protected void showInlineSuccess(String badgeText, String message) {
+        showInlineNotice(badgeText, "badge-status-scheduled", message, "status-banner-success");
+    }
+
+    protected void showInlineWarning(String badgeText, String message) {
+        showInlineNotice(badgeText, "badge-status-warning", message, "status-banner-warning");
+    }
+
+    protected void showInlineError(String badgeText, String message) {
+        showInlineNotice(badgeText, "badge-status-danger", message, "status-banner-error");
+    }
+
+    protected void hideInlineNotice() {
+        noticeBanner.setVisible(false);
+    }
+
+    private void configureNoticeBanner() {
+        noticeBanner.getStyleClass().addAll("status-banner", "status-banner-info");
+        noticeBanner.setAlignment(Pos.CENTER_LEFT);
+        noticeBanner.managedProperty().bind(noticeBanner.visibleProperty());
+        noticeBanner.setVisible(false);
+
+        noticeMessageLabel.getStyleClass().add("status-banner-text");
+        noticeMessageLabel.setWrapText(true);
+        HBox.setHgrow(noticeMessageLabel, Priority.ALWAYS);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button dismissButton = new Button("✕");
+        dismissButton.getStyleClass().add("status-banner-dismiss");
+        dismissButton.setOnAction(e -> hideInlineNotice());
+
+        noticeBanner.getChildren().addAll(noticeBadgeLabel, noticeMessageLabel, spacer, dismissButton);
+    }
+
+    private void showInlineNotice(String badgeText,
+                                  String badgeStyleClass,
+                                  String message,
+                                  String bannerVariantClass) {
+        noticeBanner.getStyleClass().removeAll(
+                "status-banner-info",
+                "status-banner-success",
+                "status-banner-warning",
+                "status-banner-error"
+        );
+        noticeBanner.getStyleClass().add(bannerVariantClass);
+
+        noticeBadgeLabel.setText(badgeText);
+        noticeBadgeLabel.getStyleClass().setAll("badge", badgeStyleClass);
+        noticeMessageLabel.setText(message);
+        noticeBanner.setVisible(true);
     }
 
     protected static Tab createNonClosableTab(String title, Node content) {
@@ -85,15 +159,15 @@ abstract class AbstractWorkspaceView extends BorderPane {
     protected static List<TableColumn<Flight, ?>> buildFlightExplorerColumns() {
         String[] cols = ReservationGuiController.FLIGHT_TABLE_COLUMNS;
         return List.of(
-                textColumn(cols[0], Flight::getFlightId, 78, true),
-                textColumn(cols[1], Flight::getFlightNumber, 84, true),
-                textColumn(cols[2], ReservationGuiController::formatRoute, 110, true),
-                textColumn(cols[3], f -> ReservationGuiController.formatDateTime(f.getDepartureTime()), 140, true),
-                textColumn(cols[4], f -> ReservationGuiController.formatDateTime(f.getArrivalTime()), 140, true),
-                textColumn(cols[5], f -> f.getAircraft().getModel(), 130, false),
-                textColumn(cols[6], f -> String.valueOf(f.getAvailableSeats().size()), 110, true),
-                textColumn(cols[7], f -> ReservationGuiController.formatCurrency(f.getBasePrice()), 130, true),
-                flightStatusBadgeColumn(cols[8], 125)
+                textColumn(cols[0], Flight::getFlightId, 74, true),
+                textColumn(cols[1], Flight::getFlightNumber, 82, true),
+                textColumn(cols[2], ReservationGuiController::formatRoute, 108, true),
+                textColumn(cols[3], f -> ReservationGuiController.formatDateTime(f.getDepartureTime()), 136, true),
+                textColumn(cols[4], f -> ReservationGuiController.formatDateTime(f.getArrivalTime()), 136, true),
+                textColumn(cols[5], f -> f.getAircraft().getModel(), 118, false),
+                textColumn(cols[6], f -> f.getAvailableSeats().size() + " / " + f.getSeats().size(), 108, true),
+                textColumn(cols[7], f -> ReservationGuiController.formatCurrency(f.getBasePrice()), 126, true),
+                flightStatusBadgeColumn(cols[8], 120)
         );
     }
 
@@ -128,6 +202,13 @@ abstract class AbstractWorkspaceView extends BorderPane {
             departureCombo.getSelectionModel().select(0);
             arrivalCombo.getSelectionModel().select(0);
         }
+    }
+
+    protected static void swapAirportSelection(ComboBox<Airport> departureCombo, ComboBox<Airport> arrivalCombo) {
+        Airport dep = departureCombo.getSelectionModel().getSelectedItem();
+        Airport arr = arrivalCombo.getSelectionModel().getSelectedItem();
+        departureCombo.getSelectionModel().select(arr);
+        arrivalCombo.getSelectionModel().select(dep);
     }
 
     protected static <T> TableColumn<T, String> textColumn(String title,

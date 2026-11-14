@@ -80,17 +80,19 @@ class ReservationGuiControllerTest {
             controller.logout();
         }
 
+        assertEquals("PAX-03", controller.generateNextPassengerId());
+
         Passenger registered = controller.registerPassenger(
-                "PAX-03",
                 "Pham Gia Huy",
                 "huy.pham@airline.vn",
                 "0903334444",
-                LocalDate.of(2002, 7, 15),
+                "2002-07-15",
                 "Male",
                 "CCCD-0003",
                 "mySecret99"
         );
         assertEquals("PAX-03", registered.getId());
+        assertEquals("PAX-04", controller.generateNextPassengerId());
         Person loggedInNew = controller.login("huy.pham@airline.vn", "mySecret99");
         assertEquals("PAX-03", loggedInNew.getId());
         assertTrue(controller.isPassengerLoggedIn());

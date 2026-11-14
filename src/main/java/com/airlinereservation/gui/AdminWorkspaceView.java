@@ -28,6 +28,7 @@ import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Role workspace container for authenticated {@code Admin} sessions.
@@ -45,6 +46,14 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
 
     private final TableView<Flight> flightTable = new TableView<>();
     private final Label flightCountLabel = ArbitrumTheme.createMonoLabel("Showing 0 flight(s)");
+    private final Label flightLifecycleHintLabel = ArbitrumTheme.createMutedLabel(
+            "Select a flight row to transition status or trigger arrival/cancellation cascades."
+    );
+
+    private final Button boardingButton = ArbitrumTheme.createSecondaryButton("Mark Boarding");
+    private final Button departedButton = ArbitrumTheme.createSecondaryButton("Mark Departed");
+    private final Button arrivedButton = ArbitrumTheme.createPrimaryButton("Mark Arrived");
+    private final Button cancelFlightButton = new Button("Cancel Flight");
 
     private final Label totalFlightsMetricLabel = createAdminStatValueLabel();
     private final Label totalBookingsMetricLabel = createAdminStatValueLabel();
@@ -58,23 +67,23 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
     private final Label passengerCountLabel = ArbitrumTheme.createMonoLabel("Showing 0 passenger(s)");
 
     private final Tab flightOperationsTab;
-    private final Tab monitorTab;
+    private final Tab bookingsLedgerTab;
+    private final Tab passengerRegistryTab;
 
     public AdminWorkspaceView(ReservationGuiController controller) {
         super(
                 controller,
-                "ADMIN CONSOLE // OPERATIONS",
+                "ADMIN OPERATIONS CONSOLE",
                 "Admin Operations Workspace",
-                "Schedule flights, orchestrate lifecycle cascades, and monitor all system bookings and passengers."
+                "Dispatch flights, drive lifecycle state transitions, and audit system-wide bookings and passengers."
         );
         this.flightOperationsTab = createNonClosableTab("Flight Operations", createFlightOperationsTab());
-        this.monitorTab = createNonClosableTab("All Bookings & Passengers", createMonitorTab());
-        tabs.getTabs().addAll(flightOperationsTab, monitorTab);
+        this.bookingsLedgerTab = createNonClosableTab("Booking Ledger", createBookingsLedgerTab());
+        this.passengerRegistryTab = createNonClosableTab("Passenger Registry", createPassengerRegistryTab());
+        tabs.getTabs().addAll(flightOperationsTab, bookingsLedgerTab, passengerRegistryTab);
 
         tabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
-            if (newTab == flightOperationsTab || newTab == monitorTab) {
-                refreshAllTablesAndMetrics();
-            }
+            refreshAllTablesAndMetrics();
         });
     }
 
@@ -88,19 +97,19 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
 
     @Override
     protected String formatWelcomeTitle(Person user) {
-        return "Operations Console — " + user.getFullName() + " (" + user.getId() + ")";
+        return user.getFullName() + " · " + user.getId();
     }
 
     private BorderPane createFlightOperationsTab() {
         BorderPane layout = new BorderPane();
-        layout.setPadding(new Insets(ArbitrumTheme.SPACE_8, 0, 0, 0));
+        layout.setPadding(new Insets(4, 0, 0, 0));
 
         VBox formCard = createScheduleFlightCard();
-        BorderPane.setMargin(formCard, new Insets(0, 0, ArbitrumTheme.SPACE_16, 0));
+        BorderPane.setMargin(formCard, new Insets(0, 0, ArbitrumTheme.SPACE_12, 0));
 
         configureFlightTable();
         BorderPane actionBar = createFlightActionBar();
-        BorderPane.setMargin(actionBar, new Insets(ArbitrumTheme.SPACE_16, 0, 0, 0));
+        BorderPane.setMargin(actionBar, new Insets(ArbitrumTheme.SPACE_12, 0, 0, 0));
 
         layout.setTop(formCard);
         layout.setCenter(flightTable);
@@ -109,15 +118,26 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
     }
 
     private VBox createScheduleFlightCard() {
-        VBox card = new VBox(ArbitrumTheme.SPACE_12);
+        VBox card = new VBox(10);
         card.getStyleClass().add("card");
 
-        Label eyebrow = ArbitrumTheme.createEyebrowLabel("FLIGHT DISPATCH // SCHEDULE CONTROL");
         Label sectionTitle = ArbitrumTheme.createHeadingLabel("Schedule New Flight", "heading-md");
 
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button autoFillButton = ArbitrumTheme.createSecondaryButton("Suggest Next ID");
+        autoFillButton.setOnAction(e -> suggestNextFlightIdentity());
+
+        Button scheduleButton = ArbitrumTheme.createPrimaryButton("Schedule Flight");
+        scheduleButton.setOnAction(e -> handleScheduleFlight());
+
+        HBox headerRow = new HBox(ArbitrumTheme.SPACE_12, sectionTitle, spacer, autoFillButton, scheduleButton);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
         GridPane fieldsGrid = new GridPane();
-        fieldsGrid.setHgap(ArbitrumTheme.SPACE_16);
-        fieldsGrid.setVgap(ArbitrumTheme.SPACE_12);
+        fieldsGrid.setHgap(ArbitrumTheme.SPACE_12);
+        fieldsGrid.setVgap(8);
 
         for (int i = 0; i < 4; i++) {
             ColumnConstraints col = new ColumnConstraints();
@@ -148,58 +168,49 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
 
         fieldsGrid.add(labeledField("Flight ID", flightIdField), 0, 0);
         fieldsGrid.add(labeledField("Flight Number", flightNumberField), 1, 0);
-        fieldsGrid.add(labeledField("Departure Airport", departureCombo), 2, 0);
-        fieldsGrid.add(labeledField("Arrival Airport", arrivalCombo), 3, 0);
+        fieldsGrid.add(labeledField("From Airport", departureCombo), 2, 0);
+        fieldsGrid.add(labeledField("To Airport", arrivalCombo), 3, 0);
 
         fieldsGrid.add(labeledField("Operating Aircraft", aircraftCombo), 0, 1);
         fieldsGrid.add(labeledField("Departure (YYYY-MM-DD HH:MM)", departureTimeField), 1, 1);
         fieldsGrid.add(labeledField("Arrival (YYYY-MM-DD HH:MM)", arrivalTimeField), 2, 1);
         fieldsGrid.add(labeledField("Base Price (VND)", basePriceField), 3, 1);
 
-        Button scheduleButton = ArbitrumTheme.createPrimaryButton("Schedule Flight");
-        scheduleButton.setOnAction(e -> handleScheduleFlight());
-
-        Button clearButton = ArbitrumTheme.createSecondaryButton("Clear Form");
-        clearButton.setOnAction(e -> resetFlightFormDefaults());
-
-        HBox actionsRow = new HBox(ArbitrumTheme.SPACE_12, scheduleButton, clearButton);
-        actionsRow.setAlignment(Pos.CENTER_LEFT);
-        VBox.setMargin(actionsRow, new Insets(4, 0, 0, 0));
-
-        card.getChildren().addAll(eyebrow, sectionTitle, fieldsGrid, actionsRow);
+        card.getChildren().addAll(headerRow, fieldsGrid);
         return card;
     }
 
     private void configureFlightTable() {
         configureExplorerTable(flightTable, "No flights scheduled in the system.");
-        flightTable.setMinHeight(240);
-        flightTable.setPrefHeight(290);
         flightTable.getColumns().setAll(buildFlightExplorerColumns());
+
+        flightTable.getSelectionModel().selectedItemProperty().addListener((obs, oldFlight, newFlight) -> {
+            updateFlightLifecycleButtons(newFlight);
+        });
+        updateFlightLifecycleButtons(null);
     }
 
     private BorderPane createFlightActionBar() {
         BorderPane bar = new BorderPane();
+        bar.getStyleClass().add("action-footer-bar");
 
-        Label tipLabel = ArbitrumTheme.createMutedLabel(
-                "Select a flight row to transition status or trigger arrival/cancellation cascades."
-        );
-        VBox leftMeta = new VBox(2, flightCountLabel, tipLabel);
+        VBox leftMeta = new VBox(2, flightCountLabel, flightLifecycleHintLabel);
         leftMeta.setAlignment(Pos.CENTER_LEFT);
 
-        Button boardingButton = ArbitrumTheme.createSecondaryButton("Mark Boarding");
         boardingButton.setOnAction(e -> handleStatusTransition(FlightStatus.BOARDING));
-
-        Button departedButton = ArbitrumTheme.createSecondaryButton("Mark Departed");
         departedButton.setOnAction(e -> handleStatusTransition(FlightStatus.DEPARTED));
-
-        Button arrivedButton = ArbitrumTheme.createPrimaryButton("Mark Arrived");
         arrivedButton.setOnAction(e -> handleArriveFlight());
 
-        Button cancelButton = new Button("Cancel Flight");
-        cancelButton.getStyleClass().add("btn-danger-pill");
-        cancelButton.setOnAction(e -> handleCancelFlight());
+        cancelFlightButton.getStyleClass().add("btn-danger-pill");
+        cancelFlightButton.setOnAction(e -> handleCancelFlight());
 
-        HBox actions = new HBox(ArbitrumTheme.SPACE_12, boardingButton, departedButton, arrivedButton, cancelButton);
+        HBox actions = new HBox(
+                ArbitrumTheme.SPACE_12,
+                boardingButton,
+                departedButton,
+                arrivedButton,
+                cancelFlightButton
+        );
         actions.setAlignment(Pos.CENTER_RIGHT);
 
         bar.setLeft(leftMeta);
@@ -207,39 +218,79 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
         return bar;
     }
 
-    private VBox createMonitorTab() {
-        VBox layout = new VBox(ArbitrumTheme.SPACE_16);
-        layout.setPadding(new Insets(ArbitrumTheme.SPACE_8, 0, 0, 0));
+    private void updateFlightLifecycleButtons(Flight selected) {
+        if (selected == null) {
+            boardingButton.setDisable(true);
+            departedButton.setDisable(true);
+            arrivedButton.setDisable(true);
+            cancelFlightButton.setDisable(true);
+            flightLifecycleHintLabel.setText(
+                    "Select a flight row to transition status or trigger arrival/cancellation cascades."
+            );
+            return;
+        }
 
-        VBox statsSection = createOnchainStatsSection();
+        FlightStatus status = selected.getStatus();
+        boardingButton.setDisable(status != FlightStatus.SCHEDULED);
+        departedButton.setDisable(status != FlightStatus.BOARDING);
+        arrivedButton.setDisable(status != FlightStatus.DEPARTED);
+        cancelFlightButton.setDisable(status != FlightStatus.SCHEDULED && status != FlightStatus.BOARDING);
+
+        String lifecycleGuidance = switch (status) {
+            case SCHEDULED -> "Next step: Mark Boarding (or Cancel Flight with automatic refund cascade).";
+            case BOARDING -> "Gate open — Next step: Mark Departed (or Cancel Flight).";
+            case DEPARTED -> "In flight — Next step: Mark Arrived (completes checked-in bookings & releases unpaid holds).";
+            case ARRIVED -> "Flight arrived — all booking lifecycle cascades completed.";
+            case CANCELLED -> "Flight cancelled — all seats released and paid bookings refunded.";
+        };
+        flightLifecycleHintLabel.setText(
+                selected.getFlightNumber() + " (" + selected.getFlightId() + " · " + status + "): " + lifecycleGuidance
+        );
+    }
+
+    private BorderPane createBookingsLedgerTab() {
+        BorderPane layout = new BorderPane();
+        layout.setPadding(new Insets(4, 0, 0, 0));
+
+        HBox telemetryBar = createTelemetryRow();
+        BorderPane.setMargin(telemetryBar, new Insets(0, 0, ArbitrumTheme.SPACE_12, 0));
 
         configureAdminBookingTable();
-        VBox bookingsSection = createTableSection(
-                "BOOKING LEDGER // SYSTEM-WIDE",
-                "All Bookings",
-                adminBookingCountLabel,
-                bookingTable
-        );
 
-        configurePassengerTable();
-        VBox passengersSection = createTableSection(
-                "PASSENGER REGISTRY // VERIFIED PROFILES",
-                "Registered Passengers",
-                passengerCountLabel,
-                passengerTable
-        );
+        BorderPane footerBar = new BorderPane();
+        footerBar.getStyleClass().add("action-footer-bar");
+        footerBar.setLeft(adminBookingCountLabel);
+        footerBar.setRight(ArbitrumTheme.createMutedLabel(
+                "System-wide ledger reflecting real-time passenger reservations, settlements, check-ins, and refunds."
+        ));
+        BorderPane.setMargin(footerBar, new Insets(ArbitrumTheme.SPACE_12, 0, 0, 0));
 
-        layout.getChildren().addAll(statsSection, bookingsSection, passengersSection);
+        layout.setTop(telemetryBar);
+        layout.setCenter(bookingTable);
+        layout.setBottom(footerBar);
         return layout;
     }
 
-    private VBox createOnchainStatsSection() {
-        VBox section = new VBox(ArbitrumTheme.SPACE_12);
-        section.getStyleClass().add("card-stone");
+    private BorderPane createPassengerRegistryTab() {
+        BorderPane layout = new BorderPane();
+        layout.setPadding(new Insets(4, 0, 0, 0));
 
-        Label eyebrow = ArbitrumTheme.createEyebrowLabel("THE NETWORK STANDARD // LIVE TELEMETRY");
-        Label heading = ArbitrumTheme.createHeadingLabel("System-Wide Overview", "heading-md");
+        configurePassengerTable();
 
+        BorderPane footerBar = new BorderPane();
+        footerBar.getStyleClass().add("action-footer-bar");
+        footerBar.setLeft(passengerCountLabel);
+        footerBar.setRight(ArbitrumTheme.createMutedLabel(
+                "Verified passenger identities and cumulative booking counts."
+        ));
+        BorderPane.setMargin(footerBar, new Insets(ArbitrumTheme.SPACE_12, 0, 0, 0));
+
+        layout.setCenter(passengerTable);
+        layout.setBottom(footerBar);
+        return layout;
+    }
+
+    private HBox createTelemetryRow() {
         HBox tilesRow = new HBox(
                 ArbitrumTheme.SPACE_12,
                 buildAdminStatTile("TOTAL FLIGHTS", totalFlightsMetricLabel),
@@ -247,31 +298,11 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
                 buildAdminStatTile("REGISTERED PASSENGERS", registeredPassengersMetricLabel),
                 buildAdminStatTile("SETTLED REVENUE", settledRevenueMetricLabel)
         );
-
-        section.getChildren().addAll(eyebrow, heading, tilesRow);
-        return section;
-    }
-
-    private VBox createTableSection(String eyebrowText, String headingText, Label countLabel, TableView<?> table) {
-        Label eyebrow = ArbitrumTheme.createEyebrowLabel(eyebrowText);
-        Label heading = ArbitrumTheme.createHeadingLabel(headingText, "heading-md");
-        VBox titleBlock = new VBox(2, eyebrow, heading);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        HBox headerRow = new HBox(ArbitrumTheme.SPACE_12, titleBlock, spacer, countLabel);
-        headerRow.setAlignment(Pos.BOTTOM_LEFT);
-
-        VBox section = new VBox(ArbitrumTheme.SPACE_8, headerRow, table);
-        VBox.setVgrow(table, Priority.ALWAYS);
-        return section;
+        return tilesRow;
     }
 
     private void configureAdminBookingTable() {
         configureExplorerTable(bookingTable, "No bookings recorded in the system.");
-        bookingTable.setMinHeight(210);
-        bookingTable.setPrefHeight(240);
 
         String[] cols = ReservationGuiController.ADMIN_BOOKING_TABLE_COLUMNS;
         bookingTable.getColumns().setAll(List.of(
@@ -288,8 +319,6 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
 
     private void configurePassengerTable() {
         configureExplorerTable(passengerTable, "No passengers registered in the system.");
-        passengerTable.setMinHeight(190);
-        passengerTable.setPrefHeight(220);
 
         String[] cols = ReservationGuiController.PASSENGER_TABLE_COLUMNS;
         passengerTable.getColumns().setAll(List.of(
@@ -311,9 +340,14 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
         aircraftCombo.getItems().setAll(controller.getAircrafts());
     }
 
+    private void suggestNextFlightIdentity() {
+        int nextIndex = controller.getAllFlights().size() + 1;
+        flightIdField.setText(String.format(Locale.ROOT, "FL-%02d", nextIndex));
+        flightNumberField.setText(String.format(Locale.ROOT, "VN%d", 100 + nextIndex * 2));
+    }
+
     private void resetFlightFormDefaults() {
-        flightIdField.clear();
-        flightNumberField.clear();
+        suggestNextFlightIdentity();
         selectDefaultAirportPair(departureCombo, arrivalCombo);
         if (!aircraftCombo.getItems().isEmpty()) {
             aircraftCombo.getSelectionModel().select(0);
@@ -326,7 +360,6 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
     }
 
     private void handleScheduleFlight() {
-        Window owner = ownerWindow();
         Airport dep = departureCombo.getSelectionModel().getSelectedItem();
         Airport arr = arrivalCombo.getSelectionModel().getSelectedItem();
         Aircraft aircraft = aircraftCombo.getSelectionModel().getSelectedItem();
@@ -344,43 +377,43 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
             );
             refreshAllTablesAndMetrics();
             flightTable.getSelectionModel().select(created);
+            flightTable.scrollTo(created);
             resetFlightFormDefaults();
-            ArbitrumTheme.showInfo(
-                    owner,
-                    "Flight Scheduled",
+            showInlineSuccess(
+                    "FLIGHT SCHEDULED",
                     "Flight " + created.getFlightNumber() + " (" + created.getFlightId() + ") "
-                            + ReservationGuiController.formatRoute(created) + " has been scheduled with "
-                            + created.getAvailableSeats().size() + " available seats."
+                            + ReservationGuiController.formatRoute(created) + " scheduled with "
+                            + created.getAvailableSeats().size() + " cabin seats."
             );
         } catch (AirlineReservationException ex) {
-            ArbitrumTheme.showError(owner, "Schedule Flight Failed", ex.getMessage());
+            showInlineError("SCHEDULE ERROR", ex.getMessage());
         }
     }
 
     private void handleStatusTransition(FlightStatus targetStatus) {
-        Window owner = ownerWindow();
-        Flight selected = requireSelectedFlight(owner);
+        Flight selected = flightTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
+            showInlineWarning("SELECT FLIGHT", "Please select a flight from the table first.");
             return;
         }
         try {
             Flight updated = controller.updateFlightStatus(selected.getFlightId(), targetStatus);
             refreshAllTablesAndMetrics();
-            ArbitrumTheme.showInfo(
-                    owner,
-                    "Flight Status Updated",
-                    "Flight " + updated.getFlightNumber() + " (" + updated.getFlightId() + ") is now "
+            showInlineSuccess(
+                    "STATUS UPDATED",
+                    "Flight " + updated.getFlightNumber() + " (" + updated.getFlightId() + ") transitioned to "
                             + updated.getStatus() + "."
             );
         } catch (AirlineReservationException ex) {
-            ArbitrumTheme.showError(owner, "Status Update Failed", ex.getMessage());
+            showInlineError("TRANSITION FAILED", ex.getMessage());
         }
     }
 
     private void handleArriveFlight() {
         Window owner = ownerWindow();
-        Flight selected = requireSelectedFlight(owner);
+        Flight selected = flightTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
+            showInlineWarning("SELECT FLIGHT", "Please select a flight from the table first.");
             return;
         }
 
@@ -399,21 +432,21 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
         try {
             Flight arrived = controller.arriveFlight(selected.getFlightId());
             refreshAllTablesAndMetrics();
-            ArbitrumTheme.showInfo(
-                    owner,
-                    "Flight Arrived",
-                    "Flight " + arrived.getFlightNumber() + " (" + arrived.getFlightId() + ") is now ARRIVED.\n"
-                            + "Associated bookings and seats have been updated."
+            showInlineSuccess(
+                    "FLIGHT ARRIVED",
+                    "Flight " + arrived.getFlightNumber() + " (" + arrived.getFlightId()
+                            + ") marked ARRIVED — checked-in bookings completed and unpaid holds released."
             );
         } catch (AirlineReservationException ex) {
-            ArbitrumTheme.showError(owner, "Flight Arrival Failed", ex.getMessage());
+            showInlineError("ARRIVAL FAILED", ex.getMessage());
         }
     }
 
     private void handleCancelFlight() {
         Window owner = ownerWindow();
-        Flight selected = requireSelectedFlight(owner);
+        Flight selected = flightTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
+            showInlineWarning("SELECT FLIGHT", "Please select a flight from the table first.");
             return;
         }
 
@@ -432,23 +465,14 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
         try {
             Flight cancelled = controller.cancelFlight(selected.getFlightId());
             refreshAllTablesAndMetrics();
-            ArbitrumTheme.showInfo(
-                    owner,
-                    "Flight Cancelled",
-                    "Flight " + cancelled.getFlightNumber() + " (" + cancelled.getFlightId() + ") has been CANCELLED.\n"
-                            + "Affected bookings were cancelled and completed payments were marked REFUNDED."
+            showInlineSuccess(
+                    "FLIGHT CANCELLED",
+                    "Flight " + cancelled.getFlightNumber() + " (" + cancelled.getFlightId()
+                            + ") CANCELLED — active bookings cancelled and completed payments marked REFUNDED."
             );
         } catch (AirlineReservationException ex) {
-            ArbitrumTheme.showError(owner, "Flight Cancellation Failed", ex.getMessage());
+            showInlineError("CANCELLATION FAILED", ex.getMessage());
         }
-    }
-
-    private Flight requireSelectedFlight(Window owner) {
-        Flight selected = flightTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            ArbitrumTheme.showWarning(owner, "No Flight Selected", "Please select a flight from the table first.");
-        }
-        return selected;
     }
 
     private void refreshAllTablesAndMetrics() {
@@ -463,12 +487,17 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
             totalBookingsMetricLabel.setText("0");
             registeredPassengersMetricLabel.setText("0");
             settledRevenueMetricLabel.setText(ReservationGuiController.formatCurrency(0));
+            updateFlightLifecycleButtons(null);
             return;
         }
 
         List<Flight> flights = controller.getAdminFlights();
         refreshTableItems(flightTable, flights, Flight::getFlightId);
+        if (flightTable.getSelectionModel().getSelectedItem() == null && !flights.isEmpty()) {
+            flightTable.getSelectionModel().selectFirst();
+        }
         flightCountLabel.setText("Showing " + flights.size() + " flight(s)");
+        updateFlightLifecycleButtons(flightTable.getSelectionModel().getSelectedItem());
 
         List<Booking> bookings = controller.getAllBookings();
         refreshTableItems(bookingTable, bookings, Booking::getBookingId);
@@ -501,7 +530,7 @@ public class AdminWorkspaceView extends AbstractWorkspaceView {
     }
 
     private static VBox labeledField(String labelText, Node control) {
-        return new VBox(ArbitrumTheme.SPACE_8, ArbitrumTheme.createFieldLabel(labelText), control);
+        return new VBox(4, ArbitrumTheme.createFieldLabel(labelText), control);
     }
 
     private static Label createAdminStatValueLabel() {

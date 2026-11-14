@@ -7,8 +7,10 @@ import com.airlinereservation.model.BusinessSeat;
 import com.airlinereservation.model.EconomySeat;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Seat;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -21,6 +23,7 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -28,14 +31,19 @@ import javafx.stage.Window;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
- * Modal JavaFX dialog rendering a flight's cabin seat map in a responsive Web3 grid with live fare preview.
+ * Modal JavaFX dialog rendering a flight's cabin seat map as a 2-aisle-2 aircraft fuselage
+ * with cabin class zone dividers, live fare preview, and direct Book-to-Pay continuation.
  */
 public class SeatSelectionDialog extends Stage {
 
-    private static final int CABIN_COLUMNS = 4;
+    private static final int SEATS_PER_ROW = 4;
+    private static final String[] COLUMN_HEADERS = {
+            "A · WINDOW", "B · AISLE", "AISLE", "C · AISLE", "D · WINDOW"
+    };
 
     private final ReservationGuiController controller;
     private final Flight flight;
@@ -43,73 +51,64 @@ public class SeatSelectionDialog extends Stage {
 
     private final Label selectedSeatsLabel = ArbitrumTheme.createMonoLabel("");
     private final Label totalPriceLabel = ArbitrumTheme.createHeadingLabel("", "heading-md");
+    private final Button holdBookingButton = ArbitrumTheme.createSecondaryButton("Hold Seats (Pay Later)");
+    private final Button bookAndPayButton = ArbitrumTheme.createPrimaryButton("Reserve & Pay Now");
+
     private Booking createdBooking;
+    private boolean proceedToPaymentRequested;
 
     public SeatSelectionDialog(Window owner, ReservationGuiController controller, Flight flight) {
         this.controller = controller;
         this.flight = flight;
 
-        setTitle("Select Seats - " + flight.getFlightNumber());
+        setTitle("Select Cabin Seats — " + flight.getFlightNumber());
         initOwner(owner);
         initModality(Modality.APPLICATION_MODAL);
-        setMinWidth(820);
-        setMinHeight(680);
+        setMinWidth(840);
+        setMinHeight(700);
 
         BorderPane root = new BorderPane();
         root.getStyleClass().add("bg-repeating-lines");
         root.setPadding(new Insets(ArbitrumTheme.SPACE_24));
 
-        // Hero header + legend
-        Label eyebrow = ArbitrumTheme.createCyanEyebrowLabel("CABIN ALLOCATION // SEAT MAP");
-        Label heading = ArbitrumTheme.createDisplayTitle("Cabin Seat Map - " + flight.getFlightNumber(), "display-md");
+        // Compact header + legend
+        Label eyebrow = ArbitrumTheme.createCyanEyebrowLabel("CABIN SEAT ALLOCATION");
+        Label heading = ArbitrumTheme.createDisplayTitle(
+                flight.getFlightNumber() + " · " + ReservationGuiController.formatRoute(flight),
+                "display-md"
+        );
         Label routeInfo = ArbitrumTheme.createHeroSubtitle(
-                flight.getDepartureAirport().getAirportCode()
-                        + " -> " + flight.getArrivalAirport().getAirportCode()
-                        + "  |  Aircraft: " + flight.getAircraft().getModel()
-                        + "  |  Base Fare: " + ReservationGuiController.formatCurrency(flight.getBasePrice())
+                "Aircraft: " + flight.getAircraft().getModel()
+                        + "  ·  Departure: " + ReservationGuiController.formatDateTime(flight.getDepartureTime())
+                        + "  ·  Base Fare: " + ReservationGuiController.formatCurrency(flight.getBasePrice())
         );
 
-        VBox heroBanner = new VBox(ArbitrumTheme.SPACE_8, eyebrow, heading, routeInfo);
-        heroBanner.getStyleClass().add("hero-banner");
+        VBox heroBanner = new VBox(4, eyebrow, heading, routeInfo);
+        heroBanner.getStyleClass().add("workspace-banner");
 
         VBox headerPanel = new VBox(ArbitrumTheme.SPACE_12, heroBanner, buildLegendRow());
-        BorderPane.setMargin(headerPanel, new Insets(0, 0, ArbitrumTheme.SPACE_16, 0));
+        BorderPane.setMargin(headerPanel, new Insets(0, 0, ArbitrumTheme.SPACE_12, 0));
 
-        // Seat grid
-        GridPane seatGrid = new GridPane();
-        seatGrid.setHgap(ArbitrumTheme.SPACE_12);
-        seatGrid.setVgap(ArbitrumTheme.SPACE_12);
-        seatGrid.setPadding(new Insets(ArbitrumTheme.SPACE_16));
+        // Aircraft fuselage container inside scroll pane
+        VBox fuselage = buildAircraftFuselage(controller.getSeatsForFlight(flight.getFlightId()));
+        StackWrapper fuselageWrapper = new StackWrapper(fuselage);
 
-        for (int c = 0; c < CABIN_COLUMNS; c++) {
-            ColumnConstraints col = new ColumnConstraints();
-            col.setPercentWidth(100.0 / CABIN_COLUMNS);
-            col.setHgrow(Priority.ALWAYS);
-            seatGrid.getColumnConstraints().add(col);
-        }
-
-        List<Seat> seats = controller.getSeatsForFlight(flight.getFlightId());
-        for (int i = 0; i < seats.size(); i++) {
-            seatGrid.add(createSeatToggleButton(seats.get(i)), i % CABIN_COLUMNS, i / CABIN_COLUMNS);
-        }
-
-        ScrollPane seatScrollPane = new ScrollPane(seatGrid);
+        ScrollPane seatScrollPane = new ScrollPane(fuselageWrapper);
         seatScrollPane.getStyleClass().add("seat-scroll");
         seatScrollPane.setFitToWidth(true);
-        seatScrollPane.setPrefViewportHeight(350);
+        seatScrollPane.setPrefViewportHeight(400);
 
-        // Footer summary & actions (yellow-to-cyan accent over stone-white surface)
-        Label summaryEyebrow = ArbitrumTheme.createEyebrowLabel("LIVE FARE PREVIEW");
-        VBox summaryPanel = new VBox(4, summaryEyebrow, selectedSeatsLabel, totalPriceLabel);
+        // Footer summary & actions
+        VBox summaryPanel = new VBox(2, selectedSeatsLabel, totalPriceLabel);
         summaryPanel.setAlignment(Pos.CENTER_LEFT);
 
         Button cancelButton = ArbitrumTheme.createSecondaryButton("Cancel");
         cancelButton.setOnAction(e -> close());
 
-        Button confirmButton = ArbitrumTheme.createPrimaryButton("Confirm Booking");
-        confirmButton.setOnAction(e -> confirmBooking());
+        holdBookingButton.setOnAction(e -> confirmBooking(false));
+        bookAndPayButton.setOnAction(e -> confirmBooking(true));
 
-        HBox actionButtons = new HBox(ArbitrumTheme.SPACE_12, cancelButton, confirmButton);
+        HBox actionButtons = new HBox(ArbitrumTheme.SPACE_12, cancelButton, holdBookingButton, bookAndPayButton);
         actionButtons.setAlignment(Pos.CENTER_RIGHT);
 
         BorderPane footerPanel = new BorderPane();
@@ -124,7 +123,7 @@ public class SeatSelectionDialog extends Stage {
 
         updateSelectionSummary();
 
-        Scene scene = new Scene(root, 880, 720);
+        Scene scene = new Scene(root, 900, 740);
         ArbitrumTheme.applyStylesheet(scene);
         setScene(scene);
     }
@@ -133,17 +132,112 @@ public class SeatSelectionDialog extends Stage {
         return createdBooking;
     }
 
+    public boolean isProceedToPaymentRequested() {
+        return proceedToPaymentRequested;
+    }
+
     private FlowPane buildLegendRow() {
         FlowPane legend = new FlowPane(ArbitrumTheme.SPACE_8, ArbitrumTheme.SPACE_8);
         legend.getChildren().addAll(
-                ArbitrumTheme.createBadgeLabel("Business (Lounge)", "badge-business"),
-                ArbitrumTheme.createBadgeLabel("Economy+ Legroom", "badge-legroom"),
-                ArbitrumTheme.createBadgeLabel("Economy", "badge-economy"),
+                ArbitrumTheme.createBadgeLabel("Business (2.0x · Lounge)", "badge-business"),
+                ArbitrumTheme.createBadgeLabel("Economy+ (1.15x · Legroom)", "badge-legroom"),
+                ArbitrumTheme.createBadgeLabel("Economy (1.0x)", "badge-economy"),
                 ArbitrumTheme.createBadgeLabel("Selected", "badge-selected"),
-                ArbitrumTheme.createBadgeLabel("Reserved", "badge-reserved"),
+                ArbitrumTheme.createBadgeLabel("Reserved (Hold)", "badge-reserved"),
                 ArbitrumTheme.createBadgeLabel("Occupied", "badge-occupied")
         );
         return legend;
+    }
+
+    private VBox buildAircraftFuselage(List<Seat> seats) {
+        VBox fuselage = new VBox(ArbitrumTheme.SPACE_12);
+        fuselage.getStyleClass().add("cabin-fuselage");
+        fuselage.setMaxWidth(760);
+
+        // Cockpit / Nose cone indicator
+        Label noseLabel = ArbitrumTheme.createEyebrowLabel("▲  FRONT OF AIRCRAFT · FLIGHT DECK  ▲");
+        HBox noseBanner = new HBox(noseLabel);
+        noseBanner.setAlignment(Pos.CENTER);
+        noseBanner.getStyleClass().add("cabin-nose-banner");
+
+        GridPane cabinGrid = new GridPane();
+        cabinGrid.setHgap(ArbitrumTheme.SPACE_12);
+        cabinGrid.setVgap(10);
+
+        // 5 columns: Seat A (22%), Seat B (22%), Center Aisle (12%), Seat C (22%), Seat D (22%)
+        double[] colPercents = {22.0, 22.0, 12.0, 22.0, 22.0};
+        for (int c = 0; c < colPercents.length; c++) {
+            ColumnConstraints col = new ColumnConstraints();
+            col.setPercentWidth(colPercents[c]);
+            col.setHgrow(Priority.ALWAYS);
+            col.setHalignment(HPos.CENTER);
+            cabinGrid.getColumnConstraints().add(col);
+        }
+
+        // Column header row
+        for (int c = 0; c < COLUMN_HEADERS.length; c++) {
+            Label colHeader = new Label(COLUMN_HEADERS[c]);
+            colHeader.getStyleClass().add("cabin-col-header");
+            cabinGrid.add(colHeader, c, 0);
+        }
+
+        int gridRow = 1;
+        String currentZone = null;
+        int totalRows = (int) Math.ceil((double) seats.size() / SEATS_PER_ROW);
+
+        for (int cabinRowIndex = 0; cabinRowIndex < totalRows; cabinRowIndex++) {
+            int rowStart = cabinRowIndex * SEATS_PER_ROW;
+            Seat firstSeatInRow = seats.get(rowStart);
+            String rowZone = classifyCabinZone(firstSeatInRow);
+
+            if (!rowZone.equals(currentZone)) {
+                currentZone = rowZone;
+                Node zoneDivider = createZoneDivider(rowZone);
+                cabinGrid.add(zoneDivider, 0, gridRow, 5, 1);
+                gridRow++;
+            }
+
+            int displayRowNumber = cabinRowIndex + 1;
+            Label aisleMarker = new Label(String.format(Locale.ROOT, "%02d", displayRowNumber));
+            aisleMarker.getStyleClass().add("cabin-aisle-marker");
+            cabinGrid.add(aisleMarker, 2, gridRow);
+
+            for (int seatCol = 0; seatCol < SEATS_PER_ROW; seatCol++) {
+                int seatIndex = rowStart + seatCol;
+                if (seatIndex >= seats.size()) {
+                    break;
+                }
+                int targetGridCol = seatCol < 2 ? seatCol : seatCol + 1;
+                cabinGrid.add(createSeatToggleButton(seats.get(seatIndex)), targetGridCol, gridRow);
+            }
+            gridRow++;
+        }
+
+        fuselage.getChildren().addAll(noseBanner, cabinGrid);
+        return fuselage;
+    }
+
+    private static String classifyCabinZone(Seat seat) {
+        if (seat instanceof BusinessSeat) {
+            return "BUSINESS CABIN · PRIORITY & LOUNGE ACCESS";
+        }
+        if (seat instanceof EconomySeat economySeat && economySeat.hasExtraLegroom()) {
+            return "ECONOMY+ · EXTRA LEGROOM ROW";
+        }
+        return "MAIN CABIN · STANDARD ECONOMY";
+    }
+
+    private static Node createZoneDivider(String zoneTitle) {
+        Label label = ArbitrumTheme.createEyebrowLabel(zoneTitle);
+        Region leftLine = new Region();
+        Region rightLine = new Region();
+        HBox.setHgrow(leftLine, Priority.ALWAYS);
+        HBox.setHgrow(rightLine, Priority.ALWAYS);
+
+        HBox box = new HBox(ArbitrumTheme.SPACE_12, leftLine, label, rightLine);
+        box.setAlignment(Pos.CENTER);
+        box.getStyleClass().add("cabin-zone-divider");
+        return box;
     }
 
     private ToggleButton createSeatToggleButton(Seat seat) {
@@ -158,13 +252,13 @@ public class SeatSelectionDialog extends Stage {
         Label priceLabel = new Label(presentation.statusOrPrice());
         priceLabel.getStyleClass().add("seat-price");
 
-        VBox content = new VBox(4, codeLabel, metaLabel, priceLabel);
+        VBox content = new VBox(2, codeLabel, metaLabel, priceLabel);
         content.setAlignment(Pos.CENTER);
 
         ToggleButton button = new ToggleButton();
         button.setGraphic(content);
         button.setMaxWidth(Double.MAX_VALUE);
-        button.setPrefHeight(86);
+        button.setPrefHeight(78);
         button.getStyleClass().addAll("seat-tile", presentation.tileStyleClass());
         button.setTooltip(new Tooltip(presentation.tooltip()));
 
@@ -194,17 +288,17 @@ public class SeatSelectionDialog extends Stage {
 
         if (seat instanceof BusinessSeat businessSeat) {
             String loungeTag = businessSeat.hasLoungeAccess() ? " · Lounge" : "";
-            tierLine = "Business x" + businessSeat.getPriceMultiplier() + loungeTag;
+            tierLine = "Business" + loungeTag;
             tooltipDetail = "Multiplier: " + businessSeat.getPriceMultiplier()
                     + "x | Lounge Access: " + (businessSeat.hasLoungeAccess() ? "Yes" : "No");
             tileStyleClass = seat.isAvailable() ? "seat-business" : unavailableClass(seat);
         } else if (seat instanceof EconomySeat economySeat && economySeat.hasExtraLegroom()) {
-            tierLine = "Economy+ Legroom";
-            tooltipDetail = "Extra Legroom";
+            tierLine = "Extra Legroom";
+            tooltipDetail = "Economy+ (1.15x)";
             tileStyleClass = seat.isAvailable() ? "seat-legroom" : unavailableClass(seat);
         } else {
             tierLine = "Economy";
-            tooltipDetail = "Standard Cabin";
+            tooltipDetail = "Standard Cabin (1.0x)";
             tileStyleClass = seat.isAvailable() ? "seat-economy" : unavailableClass(seat);
         }
 
@@ -220,34 +314,42 @@ public class SeatSelectionDialog extends Stage {
     }
 
     private void updateSelectionSummary() {
-        if (selectedSeatNumbers.isEmpty()) {
-            selectedSeatsLabel.setText("Selected Seats: None");
-            totalPriceLabel.setText("Total Price: " + ReservationGuiController.formatCurrency(0.0));
+        boolean empty = selectedSeatNumbers.isEmpty();
+        holdBookingButton.setDisable(empty);
+        bookAndPayButton.setDisable(empty);
+
+        if (empty) {
+            selectedSeatsLabel.setText("Click available cabin seats above to select (0 selected)");
+            totalPriceLabel.setText("Total Fare: " + ReservationGuiController.formatCurrency(0.0));
             return;
         }
 
         List<String> seatsList = List.copyOf(selectedSeatNumbers);
         double previewTotal = controller.previewSeatSelectionPrice(flight.getFlightId(), seatsList);
-        selectedSeatsLabel.setText("Selected Seats: " + String.join(", ", seatsList));
-        totalPriceLabel.setText("Total Price: " + ReservationGuiController.formatCurrency(previewTotal));
+        selectedSeatsLabel.setText(
+                seatsList.size() + " Seat(s) Selected: " + String.join(", ", seatsList)
+        );
+        totalPriceLabel.setText("Total Fare: " + ReservationGuiController.formatCurrency(previewTotal));
     }
 
-    private void confirmBooking() {
+    private void confirmBooking(boolean proceedToPayment) {
         List<String> seatsToBook = List.copyOf(selectedSeatNumbers);
         try {
             Booking booking = controller.bookSeats(flight.getFlightId(), seatsToBook);
             this.createdBooking = booking;
-            ArbitrumTheme.showInfo(
-                    this,
-                    "Booking Hold Confirmed",
-                    "Booking " + booking.getBookingId() + " created (" + booking.getStatus() + ").\n"
-                            + "Flight: " + flight.getFlightNumber() + "\n"
-                            + "Seats: " + String.join(", ", seatsToBook) + "\n"
-                            + "Total Fare: " + ReservationGuiController.formatCurrency(booking.getTotalPrice())
-            );
+            this.proceedToPaymentRequested = proceedToPayment;
             close();
         } catch (AirlineReservationException ex) {
             ArbitrumTheme.showError(this, "Seat Booking Failed", ex.getMessage());
+        }
+    }
+
+    private static final class StackWrapper extends HBox {
+        StackWrapper(Node child) {
+            super(child);
+            setAlignment(Pos.TOP_CENTER);
+            setPadding(new Insets(ArbitrumTheme.SPACE_16));
+            HBox.setHgrow(child, Priority.ALWAYS);
         }
     }
 
