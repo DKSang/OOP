@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PassengerTest {
 
@@ -83,5 +85,36 @@ class PassengerTest {
         assertThrows(UnsupportedOperationException.class, () -> passenger.getBookingHistory().add(booking));
         assertThrows(ValidationException.class, () -> passenger.addBooking(null));
         assertThrows(ValidationException.class, () -> passenger.addBooking(otherBooking));
+    }
+
+    @Test
+    void supportsDefaultAndExplicitPasswordAuthenticationAndChangePassword() {
+        Passenger defaultPasswordPassenger = new Passenger(
+                "PAX-01", "Nguyen Van A", "a@example.com", "0901111111",
+                LocalDate.of(1998, 1, 10), "Male", "CCCD-001"
+        );
+        assertTrue(defaultPasswordPassenger.authenticate("123456"));
+        assertFalse(defaultPasswordPassenger.authenticate("wrong"));
+        assertFalse(defaultPasswordPassenger.authenticate(null));
+
+        Passenger customPasswordPassenger = new Passenger(
+                "PAX-02", "Tran Thi B", "b@example.com", "0902222222",
+                LocalDate.of(1999, 5, 20), "Female", "CCCD-002", "secretPass"
+        );
+        assertTrue(customPasswordPassenger.authenticate("secretPass"));
+        assertFalse(customPasswordPassenger.authenticate("123456"));
+
+        customPasswordPassenger.changePassword("secretPass", "newPass123");
+        assertTrue(customPasswordPassenger.authenticate("newPass123"));
+        assertFalse(customPasswordPassenger.authenticate("secretPass"));
+
+        assertThrows(ValidationException.class,
+                () -> customPasswordPassenger.changePassword("wrongOld", "anotherPass"));
+        assertThrows(ValidationException.class,
+                () -> customPasswordPassenger.changePassword("newPass123", "  "));
+        assertThrows(ValidationException.class, () -> new Passenger(
+                "PAX-03", "Le Van C", "c@example.com", "0903333333",
+                LocalDate.of(2000, 1, 1), "Male", "CCCD-003", "  "
+        ));
     }
 }

@@ -5,12 +5,14 @@ import com.airlinereservation.enums.PaymentMethod;
 import com.airlinereservation.exception.DuplicateEntityException;
 import com.airlinereservation.exception.EntityNotFoundException;
 import com.airlinereservation.exception.ValidationException;
+import com.airlinereservation.model.Admin;
 import com.airlinereservation.model.Aircraft;
 import com.airlinereservation.model.Airport;
 import com.airlinereservation.model.Booking;
 import com.airlinereservation.model.Flight;
 import com.airlinereservation.model.Passenger;
 import com.airlinereservation.model.Payment;
+import com.airlinereservation.model.Person;
 import com.airlinereservation.model.Seat;
 import com.airlinereservation.payment.PaymentFactory;
 import com.airlinereservation.payment.PaymentStrategy;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Central coordinator managing system catalogs and core domain workflows.
@@ -36,6 +39,7 @@ public class AirlineReservationSystem {
     private final Map<String, Aircraft> aircrafts = new LinkedHashMap<>();
     private final Map<String, Flight> flights = new LinkedHashMap<>();
     private final Map<String, Passenger> passengers = new LinkedHashMap<>();
+    private final Map<String, Admin> admins = new LinkedHashMap<>();
     private final Map<String, Booking> bookings = new LinkedHashMap<>();
     private long bookingSequence;
     private long paymentSequence;
@@ -159,6 +163,64 @@ public class AirlineReservationSystem {
 
     public List<Passenger> getPassengers() {
         return List.copyOf(passengers.values());
+    }
+
+    public void registerAdmin(Admin admin) {
+        ValidationException.requireNonNull(admin, "Admin");
+        String key = admin.getId();
+        if (admins.containsKey(key)) {
+            throw new DuplicateEntityException("Admin already exists with ID: " + key);
+        }
+        boolean duplicateStaffCode = admins.values().stream()
+                .anyMatch(existing -> existing.getStaffCode().equalsIgnoreCase(admin.getStaffCode()));
+        if (duplicateStaffCode) {
+            throw new DuplicateEntityException("Admin already exists with staff code: " + admin.getStaffCode());
+        }
+        admins.put(key, admin);
+    }
+
+    public Admin findAdminById(String adminId) {
+        return findById(admins, adminId, "Admin");
+    }
+
+    public List<Admin> getAdmins() {
+        return List.copyOf(admins.values());
+    }
+
+    /**
+     * Authenticates a registered Admin (by ID, staff code, or email) or Passenger
+     * (by ID, email, or passport/ID) against their stored password.
+     */
+    public Person authenticate(String identifier, String password) {
+        String key = ValidationException.requireNonBlank(identifier, "Login identifier");
+        if (password == null || password.isBlank()) {
+            throw new ValidationException("Password must not be blank");
+        }
+
+        Person authenticatedAdmin = findAuthenticated(admins.values(), admin -> matchesAdminIdentifier(admin, key), password);
+        if (authenticatedAdmin != null) {
+            return authenticatedAdmin;
+        }
+        Person authenticatedPassenger = findAuthenticated(
+                passengers.values(), passenger -> matchesPassengerIdentifier(passenger, key), password);
+        if (authenticatedPassenger != null) {
+            return authenticatedPassenger;
+        }
+        throw new ValidationException("Invalid login credentials");
+    }
+
+    /**
+     * Clears all catalogs, user registries, bookings, and sequence counters.
+     */
+    public void clear() {
+        airports.clear();
+        aircrafts.clear();
+        flights.clear();
+        passengers.clear();
+        admins.clear();
+        bookings.clear();
+        bookingSequence = 0;
+        paymentSequence = 0;
     }
 
     public Booking createBooking(String passengerId, String flightId, List<String> seatNumbers) {
@@ -326,5 +388,28 @@ public class AirlineReservationSystem {
 
     private static String normalizeCode(String code) {
         return code.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static <T extends Person> T findAuthenticated(Iterable<T> candidates,
+                                                          Predicate<T> identifierMatches,
+                                                          String password) {
+        for (T candidate : candidates) {
+            if (identifierMatches.test(candidate) && candidate.authenticate(password)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static boolean matchesAdminIdentifier(Admin admin, String key) {
+        return admin.getId().equalsIgnoreCase(key)
+                || admin.getStaffCode().equalsIgnoreCase(key)
+                || admin.getEmail().equalsIgnoreCase(key);
+    }
+
+    private static boolean matchesPassengerIdentifier(Passenger passenger, String key) {
+        return passenger.getId().equalsIgnoreCase(key)
+                || passenger.getEmail().equalsIgnoreCase(key)
+                || passenger.getPassportOrId().equalsIgnoreCase(key);
     }
 }

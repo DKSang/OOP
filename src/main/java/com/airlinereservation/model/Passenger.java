@@ -24,7 +24,18 @@ public class Passenger extends Person {
                      LocalDate dateOfBirth,
                      String gender,
                      String passportOrId) {
-        super(id, fullName, email, phoneNumber);
+        this(id, fullName, email, phoneNumber, dateOfBirth, gender, passportOrId, DEFAULT_PASSWORD);
+    }
+
+    public Passenger(String id,
+                     String fullName,
+                     String email,
+                     String phoneNumber,
+                     LocalDate dateOfBirth,
+                     String gender,
+                     String passportOrId,
+                     String password) {
+        super(id, fullName, email, phoneNumber, password);
         this.dateOfBirth = ValidationException.requireNonNull(dateOfBirth, "Date of birth");
         this.gender = ValidationException.requireNonBlank(gender, "Gender");
         this.passportOrId = ValidationException.requireNonBlank(passportOrId, "Passport or ID");

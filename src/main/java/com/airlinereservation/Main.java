@@ -21,6 +21,10 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
+        if (hasGuiFlag(args)) {
+            AirlineReservationApp.launch();
+            return;
+        }
         AirlineReservationSystem system = new AirlineReservationSystem();
 
         Airport han = new Airport("HAN", "Noi Bai", "Hanoi");
@@ -124,5 +128,17 @@ public class Main {
                 + " checkedInBooking=" + aliceBooking.getStatus()
                 + " pendingHold=" + pendingHold.getStatus()
                 + " noShow=" + noShowBooking.getStatus());
+    }
+
+    private static boolean hasGuiFlag(String[] args) {
+        if (args == null) {
+            return false;
+        }
+        for (String arg : args) {
+            if ("--gui".equalsIgnoreCase(arg)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
