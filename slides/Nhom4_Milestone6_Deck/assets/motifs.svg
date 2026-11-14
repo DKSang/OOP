@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" role="img" aria-label="Abstract ink motifs">
+<!-- Original abstract "cut paper" shapes in --ad-ink. Use as large, partially cropped cover/closing art. Fill #1b1b19. -->
+<g fill="#1b1b19">
+  <path id="blob" d="M60 190 C80 120 170 60 262 78 C340 92 392 150 380 232 C372 300 336 352 262 372 C170 396 90 360 62 290 C50 260 52 220 60 190 Z"/>
+  <path id="slab" d="M470 60 L690 52 L700 252 L478 262 Z"/>
+  <path id="arch" d="M120 640 L120 520 C120 440 200 410 262 410 C324 410 404 440 404 520 L404 640 Z"/>
+  <path id="bar" d="M520 470 C560 450 740 430 830 470 C850 480 850 520 826 530 C740 560 570 580 528 560 C500 546 500 486 520 470 Z"/>
+  <circle id="dot" cx="580" cy="340" r="36"/>
+</g>
+</svg>

@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Airline Reservation System — Nhóm 4 · Milestone 6</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="tokens/tokens.css">
+<link rel="stylesheet" href="components/components.css">
+<style>
+  :root { --ad-t-title-lh: 1.08; }
+  html,body{margin:0;height:100%;background:#141413;overflow:hidden}
+  .deck{position:fixed;inset:0;display:grid;place-items:center}
+  .stage{position:relative;width:1920px;height:1080px;transform-origin:center center;flex:none}
+  .stage > .ad-slide{position:absolute;inset:0;display:none}
+  .stage > .ad-slide.is-active{display:block}
+  .hud{position:fixed;left:16px;bottom:12px;font:13px/1 var(--ad-font-mono);color:#8c8c80;pointer-events:none}
+  /* Cabin seat map tiles inside Slide 10 UI showcase (built strictly from --ad-* tokens) */
+  .seat-grid{display:grid;grid-template-columns:82px 1fr 1fr 24px 1fr 1fr;gap:10px;align-items:center}
+  .seat-row-lbl{font-family:var(--ad-font-mono);font-size:18px;color:var(--ad-muted)}
+  .seat-btn{height:58px;border-radius:var(--ad-r-sm);display:grid;place-items:center;font-family:var(--ad-font-mono);font-size:19px;font-weight:600;border:1px solid var(--ad-hairline);background:var(--ad-surface);color:var(--ad-ink)}
+  .seat-btn--biz{background:var(--ad-lavender);border-color:transparent;color:var(--ad-ink)}
+  .seat-btn--plus{background:var(--ad-sage);border-color:transparent;color:var(--ad-ink)}
+  .seat-btn--sel{background:var(--ad-clay);border-color:transparent;color:#fff}
+  .seat-btn--occ{background:var(--ad-stone-300);border-color:transparent;color:var(--ad-muted)}
+  .seat-btn--res{background:var(--ad-clay-tint);border-color:transparent;color:var(--ad-ink-soft)}
+  .seat-aisle{text-align:center;font-family:var(--ad-font-mono);font-size:14px;color:var(--ad-stone-500)}
+  @media print{
+    @page{size:1920px 1080px;margin:0}
+    html,body{overflow:visible;height:auto;background:none}
+    .deck{position:static;display:block} .stage{transform:none!important;width:auto;height:auto}
+    .stage > .ad-slide{display:block!important;position:relative;page-break-after:always;break-after:page} .hud{display:none}
+  }
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+<defs>
+<marker id="ad-ah" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M1.5 1.5 L10.5 6 L1.5 10.5" fill="none" stroke="#414238" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="ad-ah-soft" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M1.5 1.5 L10.5 6 L1.5 10.5" fill="none" stroke="#7a7a73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="ad-ah-clay" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M1.5 1.5 L10.5 6 L1.5 10.5" fill="none" stroke="#d77f60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<symbol id="ad-i-doc-search" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8.5 L40 9 L40.5 30 M11.5 8.5 L12.5 50 L28 50.5"/><path d="M18 17 H33 M18 24 H30 M18 31 H24"/><circle cx="42" cy="40" r="9.5"/><path d="M49 47 L58 57"/></g></symbol>
+<symbol id="ad-i-window" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11 L56 10.5 L56.5 52 L8.5 52.5 Z"/><path d="M8 20 L56 19.5"/><path d="M14 15.5 H16 M21 15.5 H23"/></g></symbol>
+<symbol id="ad-i-code" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11 L56 10.5 L56.5 52 L8.5 52.5 Z"/><path d="M8 20 L56 19.5"/><path d="M26 30 L19 36 L26 42 M38 30 L45 36 L38 42 M34 28 L30 44"/></g></symbol>
+<symbol id="ad-i-chip" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14 L50 13.5 L50.5 50 L13.5 50.5 Z"/><path d="M23 23 H41 V41 H23 Z M23 29 H41 M23 35 H41 M29 23 V41 M35 23 V41"/><path d="M22 14 V7 M32 14 V7 M42 14 V7 M22 50 V57 M32 50 V57 M42 50 V57 M14 22 H7 M14 32 H7 M14 42 H7 M50 22 H57 M50 32 H57 M50 42 H57"/></g></symbol>
+<symbol id="ad-i-globe" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="23"/><ellipse cx="32" cy="32" rx="10" ry="23"/><path d="M9.5 24 H54.5 M9.5 40 H54.5 M32 9 V55"/></g></symbol>
+<symbol id="ad-i-bulb" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 40 C13 33 14 16 32 14 C50 16 51 33 42 40 C40 42 40 45 40 47 H24 C24 45 24 42 22 40 Z"/><path d="M25 52 H39 M27 57 H37"/><path d="M32 22 L34 27 L39 28 L35 32 L36 37 L32 34.5 L28 37 L29 32 L25 28 L30 27 Z"/></g></symbol>
+<symbol id="ad-i-pencil" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 46 L40 12 L50 20 L22 54 L10 57 Z"/><path d="M36 17 L46 25 M12 46 L22 54"/><path d="M26 59 C32 53 36 62 42 57 C46 54 50 58 56 56"/></g></symbol>
+<symbol id="ad-i-cycle" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 30 C14 18 24 10 36 12 M50 34 C50 46 40 54 28 52"/><path d="M30 6 L38 12 L31 19 Z M34 58 L26 52 L33 45 Z"/><path d="M24 33 L30 39 L42 26"/></g></symbol>
+<symbol id="ad-i-moon" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M30 10 C18 12 10 24 14 36 C18 48 32 52 42 46 C32 44 26 34 29 24 C30 18 33 13 30 10 Z"/><path d="M40 40 C40 34 47 33 50 36 C55 34 59 40 56 44 C58 49 53 53 48 52 H42 C37 52 36 44 40 40 Z"/></g></symbol>
+<symbol id="ad-i-folder" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18 L8.5 52 L56 51.5 L56 24 L30 24.5 L25 17.5 Z"/><path d="M8 30 H56"/></g></symbol>
+<symbol id="ad-i-layers" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 9 L57 22 L32 35 L7 22 Z"/><path d="M7 32 L32 45 L57 32 M7 42 L32 55 L57 42"/></g></symbol>
+<symbol id="ad-i-nodes" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="6"/><circle cx="50" cy="20" r="6"/><circle cx="26" cy="50" r="6"/><path d="M19 17 L44 19 M17 20 L23 44 M46 25 L30 45"/></g></symbol>
+<symbol id="ad-i-stack-doc" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8 L36 8.5 L36.5 44 L10.5 44.5 Z"/><path d="M42 14 L54 14.5 L54.5 56 L18 56.5 L18 50"/><path d="M16 17 H30 M16 24 H30 M16 31 H24"/></g></symbol>
+<symbol id="ad-i-arrow" viewBox="0 0 64 24"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 H58 M47 3 L59 12 L47 21"/></g></symbol>
+<symbol id="ad-i-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5 V19 M5 12 H19"/></g></symbol>
+<symbol id="ad-i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></g></symbol>
+<symbol id="ad-i-terminal" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11 L56 10.5 L56.5 52 L8.5 52.5 Z"/><path d="M8 20 L56 19.5"/><path d="M17 28 L26 35 L17 42"/><path d="M32 43 H46" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-radar" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="31" cy="34" r="22"/><circle cx="31" cy="34" r="11.5"/><path d="M9 34 H53 M31 12 V56" stroke-opacity=".0"/><path d="M31 34 L47 18" stroke="var(--ad-clay)"/><circle cx="47" cy="18" r="2.6" stroke="var(--ad-clay)"/><circle cx="31" cy="34" r="1.6"/></g></symbol>
+<symbol id="ad-i-router" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 38 L57 37.5 L57.5 53 L7.5 53.5 Z"/><path d="M15 46 H17 M23 46 H25"/><path d="M18 37.5 L14 21 M46 37.5 L50 21 M32 37.5 V22"/><path d="M24 14 C28 9.5 36 9.5 40 14" stroke="var(--ad-clay)"/><path d="M27.5 18.5 C30 16.5 34 16.5 36.5 18.5" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-server" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 9 L54 8.5 L54.5 28 L10.5 28.5 Z"/><path d="M10.5 36 L54.5 35.5 L55 55 L11 55.5 Z"/><path d="M17 18.5 H19 M17 45.5 H19"/><path d="M40 18.5 H47" stroke="var(--ad-clay)"/><path d="M40 45.5 H47" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-laptop" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 12 L51 11.5 L51.5 38 L13.5 38.5 Z"/><path d="M6 46 L58 45.5 L54 52.5 L10 53 Z"/><path d="M20 20 L26 25 L20 30" stroke="var(--ad-clay)"/><path d="M31 31 H40" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-shield" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 7 L53 14.5 C53 34 46.5 47 32 57 C17.5 47 11 34 11 14.5 Z"/><path d="M22.5 30.5 L29.5 37.5 L42 23" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-lock" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 28 L51 27.5 L51.5 55 L13.5 55.5 Z"/><path d="M21 28 V19 C21 8 43 8 43 19 V28"/><path d="M32 38 V45" stroke="var(--ad-clay)"/><circle cx="32" cy="37.5" r="3" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-key" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="19" cy="22" r="11"/><path d="M26.5 30 L52 55.5"/><path d="M42 45 L47.5 39.5 M48 51.5 L52.5 47"/><circle cx="18" cy="21" r="2.4" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-eye" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 32 C14 18 24 13 32 13 C40 13 50 18 59 32 C50 46 40 51 32 51 C24 51 14 46 5 32 Z"/><circle cx="32" cy="32" r="9" stroke="var(--ad-clay)"/><circle cx="32" cy="32" r="2.6"/></g></symbol>
+<symbol id="ad-i-packet" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19.5 L32 8 L55 19.5 L55 44.5 L32 56 L9 44.5 Z"/><path d="M9 19.5 L32 31 L55 19.5 M32 31 V56"/><path d="M20 14 L43 25.5" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-port" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18 L55 17.5 L55.5 46 L9.5 46.5 Z"/><path d="M17 18 V27 M25 18 V27 M33 18 V27 M41 18 V27 M49 18 V27" /><path d="M32 52 V58" stroke="var(--ad-clay)"/><path d="M24 58 H40" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-warning" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 8 L58 53 L6 53.5 Z"/><path d="M32 24 V38" stroke="var(--ad-clay)"/><circle cx="32" cy="45" r="1.4" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-user" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="21" r="11"/><path d="M10 56 C10 41 20 35 32 35 C44 35 54 41 54 56"/><path d="M20 47 C23 43 27 41 32 41" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-link-break" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M26 22 L19 29 C12 36 12 45 18 51 C24 57 33 56 38 51 L41 48"/><path d="M38 42 L45 35 C52 28 52 19 46 13 C40 7 31 8 26 13 L23 16"/><path d="M30 38 L34 34" stroke="var(--ad-clay)"/><path d="M10 14 L16 20" stroke="var(--ad-clay)"/><path d="M54 50 L48 44" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-check-circle" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="23"/><path d="M21 33 L29 41 L44 24" stroke="var(--ad-clay)"/></g></symbol>
+<symbol id="ad-i-magnifier" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="27" r="17"/><path d="M40 40 L56 56"/><path d="M19 27 C19 22 23 19 27 19" stroke="var(--ad-clay)"/></g></symbol>
+</svg>
+
+<main class="deck"><div class="stage" id="stage">
+
+<!-- ===== 1. cover ===== -->
+<section class="ad-slide ad-slide--sage-soft" data-layout="cover"
+  aria-label="Slide 1: Cover"
+  data-pptx-notes="Xin chào thầy và các bạn. Hôm nay Nhóm 4 lớp D24CQCE05 xin trình bày sản phẩm hoàn chỉnh ở Milestone 6 của Đề tài số 21 (nhóm đề tài nâng cao): Hệ thống Đặt vé Máy bay — Airline Reservation System. Bài trình bày của nhóm sẽ đi qua 4 chặng: (1) Phân tích bài toán và mô hình UML, (2) Các trụ cột OOP, Collections và Xử lý ngoại lệ, (3) Cải tiến SOLID &amp; Design Patterns ở Milestone 5, và cuối cùng là (4) Kiến trúc JavaFX 25, bộ 85 bài kiểm thử JUnit 5 cùng phần Live Demo trực tiếp.">
+<div class="ad-eventmark" style="left:828px;top:100px"><span class="ad-eventmark__a">INT1332_CLC · MILESTONE 6</span><span class="ad-eventmark__b">Nhóm 4 · D24CQCE05</span></div>
+<div class="ad-cover__art"><svg viewBox="0 0 1920 1080" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><defs><filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="4" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 -.8 .4" result="sp"/><feComposite in="sp" in2="SourceAlpha" operator="in" result="spk"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="spk"/></feMerge></filter></defs><g transform="translate(30 90) scale(1.8) translate(-400 -90)"><path d="M553.8 218.3 L555.9 226.8 L554.0 236.3 L552.4 245.1 L554.1 255.6 L551.3 263.0 L550.5 274.9 L551.9 281.2 L551.4 294.8 L547.6 302.6 L542.4 308.6 L540.2 316.6 L534.3 324.1 L528.6 330.7 L525.1 336.6 L519.8 339.0 L514.0 341.3 L508.1 341.2 L504.9 345.3 L498.7 344.5 L491.0 342.7 L485.6 342.1 L482.5 343.6 L477.6 343.5 L472.8 345.5 L463.3 342.5 L461.8 343.3 L456.6 342.2 L447.0 342.0 L444.4 338.6 L435.7 336.1 L434.0 334.3 L425.1 327.1 L420.3 320.1 L419.2 313.4 L414.8 306.3 L410.4 298.5 L408.1 288.7 L406.6 278.0 L406.0 267.7 L408.7 260.4 L405.4 251.4 L404.8 240.0 L407.6 232.0 L404.2 224.6 L404.7 212.5 L407.2 203.9 L405.2 193.7 L404.5 186.7 L405.5 177.4 L406.7 167.2 L410.3 157.6 L410.1 149.6 L410.4 137.0 L416.3 130.9 L416.8 119.9 L423.1 115.9 L425.4 109.8 L433.6 103.3 L437.1 97.4 L441.1 98.4 L447.7 95.4 L453.4 94.7 L460.4 91.7 L464.0 93.2 L468.9 90.9 L476.3 93.6 L481.8 91.0 L488.4 90.7 L489.7 91.1 L497.0 90.4 L501.3 92.3 L508.6 92.2 L513.4 97.1 L521.8 98.3 L526.1 101.2 L529.1 103.1 L533.5 112.5 L541.0 119.5 L541.8 125.8 L546.9 134.9 L548.5 145.4 L549.2 153.0 L553.3 164.2 L554.1 173.0 L554.9 183.5 L553.2 191.8 L555.7 201.7 L553.6 210.3 Z" fill="#f9faf5" filter="url(#grain)"/><path d="M403.0 345.2 L410.1 345.6 L417.3 345.3 L424.4 346.1 L431.5 346.4 L438.7 345.4 L445.8 347.0 L452.9 348.0 L460.1 348.0 L467.2 347.8 L474.3 347.1 L481.5 348.0 L488.6 347.7 L495.8 347.4 L502.9 348.4 L510.0 346.6 L517.2 348.2 L524.3 346.4 L531.4 347.7 L538.6 347.3 L545.7 346.6 L552.9 347.6 L559.7 347.0 L559.0 354.1 L560.6 361.2 L561.2 368.3 L560.5 375.5 L559.6 382.6 L560.7 389.7 L560.8 396.8 L559.0 403.9 L559.6 411.0 L560.1 418.2 L559.1 425.3 L560.4 432.4 L559.6 439.5 L560.7 446.6 L560.2 453.7 L559.3 460.8 L559.0 468.0 L559.1 475.1 L560.3 482.2 L559.8 489.3 L560.4 496.4 L560.9 503.5 L560.0 510.7 L559.2 517.8 L559.2 524.9 L560.0 530.9 L552.9 532.3 L545.8 532.4 L538.7 531.5 L531.6 531.7 L524.5 531.7 L517.5 531.0 L510.4 530.4 L503.3 530.5 L496.2 530.8 L489.1 529.4 L482.0 529.0 L474.9 530.2 L467.8 531.0 L460.7 531.1 L453.7 529.0 L446.5 531.0 L439.5 529.4 L432.4 529.7 L425.3 530.4 L418.2 529.2 L411.1 531.1 L403.9 530.0 L402.6 522.9 L404.4 515.8 L402.7 508.7 L402.3 501.5 L401.9 494.4 L403.1 487.3 L402.5 480.2 L402.8 473.1 L402.7 466.0 L403.0 458.8 L403.3 451.7 L402.5 444.6 L401.3 437.5 L402.0 430.4 L401.2 423.3 L400.8 416.2 L402.0 409.0 L402.6 401.9 L401.4 394.8 L401.7 387.7 L402.0 380.6 L402.9 373.5 L402.6 366.3 L403.0 359.2 L403.5 352.1 Z" fill="#f9faf5" filter="url(#grain)"/><path d="M552.5 203.5 L558.0 199.1 L562.1 193.0 L568.7 190.0 L573.8 185.0 L578.2 179.3 L584.1 175.3 L589.7 171.0 L595.5 166.9 L600.1 161.4 L605.8 157.2 L611.6 153.2 L616.9 148.4 L622.5 144.1 L627.2 138.7 L632.9 134.5 L637.6 129.2 L643.8 125.6 L649.4 121.2 L654.5 116.4 L660.1 112.0 L664.7 106.5 L671.2 103.3 L675.1 98.7 L680.3 103.6 L684.3 109.6 L689.6 114.4 L692.9 120.9 L697.5 126.3 L702.9 131.0 L707.8 136.1 L711.7 142.1 L716.0 147.8 L720.2 153.6 L725.3 158.5 L730.7 163.2 L733.9 169.8 L739.9 174.0 L743.3 180.4 L749.1 184.8 L753.6 190.3 L757.5 196.3 L763.5 200.5 L768.2 205.8 L772.4 211.6 L776.8 217.1 L782.0 221.5 L774.9 220.2 L767.6 220.6 L760.6 218.8 L753.2 220.1 L746.1 219.1 L738.9 217.6 L731.7 217.5 L724.6 215.7 L717.4 215.3 L710.2 214.9 L703.1 213.5 L695.9 213.5 L688.6 213.4 L681.5 212.6 L674.4 210.9 L667.2 210.2 L659.9 211.3 L652.8 209.1 L645.6 208.3 L638.4 208.8 L631.2 208.2 L623.9 208.5 L616.8 207.2 L609.6 206.8 L602.4 206.0 L595.1 206.9 L588.1 204.2 L580.8 204.8 L573.6 204.6 L566.5 203.2 L559.2 203.3 Z" fill="#f9faf5" filter="url(#grain)"/><path d="M566.3 347.3 L570.2 341.3 L576.0 337.1 L580.7 331.8 L586.6 327.8 L591.5 322.7 L595.3 316.6 L600.6 311.9 L605.0 306.3 L610.5 301.9 L616.1 297.5 L621.2 292.7 L625.4 286.9 L630.1 281.7 L634.8 276.5 L640.5 272.2 L646.0 267.7 L649.6 261.4 L655.7 257.5 L659.3 251.2 L664.6 246.5 L669.6 241.5 L675.4 237.3 L680.2 231.7 L685.1 237.0 L691.3 240.8 L695.6 246.7 L701.9 250.4 L706.5 255.9 L712.2 260.2 L717.6 264.9 L722.4 270.3 L727.8 274.9 L733.2 279.6 L738.4 284.5 L743.4 289.5 L749.3 293.7 L754.4 298.6 L759.0 304.2 L764.2 309.1 L769.6 313.8 L774.3 319.2 L779.9 323.7 L784.7 329.0 L790.9 332.8 L795.2 338.6 L800.3 343.6 L806.0 348.4 L798.9 348.3 L791.9 346.6 L784.8 348.1 L777.8 346.1 L770.7 346.2 L763.6 347.9 L756.6 347.4 L749.5 346.1 L742.5 347.1 L735.4 347.4 L728.4 345.5 L721.3 346.4 L714.2 345.4 L707.2 346.9 L700.1 346.2 L693.1 345.5 L686.0 347.0 L678.9 346.6 L671.9 345.4 L664.8 344.9 L657.8 344.8 L650.7 346.8 L643.7 345.9 L636.6 345.4 L629.5 346.1 L622.5 345.7 L615.4 347.0 L608.4 347.4 L601.3 347.4 L594.2 347.6 L587.2 346.5 L580.1 346.7 L573.1 346.7 Z" fill="#f9faf5" filter="url(#grain)"/><path d="M559.4 526.5 L563.6 520.7 L569.0 515.8 L573.4 510.2 L577.5 504.3 L580.1 497.2 L584.2 491.4 L590.1 486.8 L593.4 480.3 L598.2 475.0 L601.6 468.6 L606.1 463.0 L610.5 457.3 L614.6 451.4 L619.2 445.9 L622.4 439.4 L628.0 434.6 L632.7 429.1 L635.7 422.5 L640.6 417.2 L645.6 411.9 L649.3 405.8 L653.3 399.8 L657.7 394.1 L662.7 388.9 L666.2 382.6 L672.3 378.2 L675.6 372.3 L679.6 378.3 L684.2 383.7 L688.9 389.1 L692.8 395.1 L697.2 400.7 L700.6 407.1 L705.2 412.5 L710.5 417.4 L713.5 424.1 L718.1 429.6 L722.4 435.3 L726.6 441.0 L731.7 446.1 L735.1 452.5 L739.5 458.1 L744.2 463.5 L748.4 469.2 L752.8 474.9 L757.9 480.0 L761.7 486.0 L767.3 490.7 L771.2 496.7 L775.4 502.5 L780.7 507.4 L784.5 513.5 L788.4 519.5 L792.9 525.0 L798.1 530.0 L802.0 535.6 L794.9 536.0 L787.8 534.8 L780.7 534.6 L773.6 534.2 L766.4 534.1 L759.4 532.3 L752.2 532.7 L745.1 532.2 L738.0 531.7 L730.9 530.8 L723.7 532.7 L716.7 531.0 L709.6 530.3 L702.4 531.2 L695.3 530.5 L688.1 531.1 L681.0 530.5 L673.9 529.8 L666.8 530.2 L659.7 529.6 L652.6 527.8 L645.5 528.5 L638.4 528.4 L631.3 527.1 L624.1 527.9 L617.0 526.7 L609.9 527.4 L602.8 526.9 L595.6 528.5 L588.5 527.2 L581.4 526.7 L574.2 528.3 L567.2 526.1 Z" fill="#f9faf5" filter="url(#grain)"/><path d="M476.5 210.2 L476.1 214.6 L475.7 220.5 L475.3 227.4 L474.7 235.2 L475.1 243.4 L476.3 251.7 L477.3 259.8 L477.8 267.4 L477.9 274.7 L477.8 282.0 L478.4 289.3 L478.7 296.7 L479.3 304.1 L480.1 311.4 L480.5 318.7 L481.4 326.0 L482.4 333.3 L482.1 340.6 L481.7 347.9 L481.0 355.1 L480.3 362.4 L480.4 369.7 L480.2 376.9 L479.8 384.2 L479.8 391.8 L479.8 400.0 L479.5 408.4 L479.1 416.7 L478.6 424.5 L478.7 431.6 L478.9 437.5 L479.4 441.9 L480.0 439.6 L481.7 438.0 L484.1 437.4 L486.4 438.0 L488.0 439.7 L488.6 442.1 L489.2 437.6 L489.9 431.7 L489.8 424.7 L489.4 416.8 L489.0 408.5 L489.3 400.1 L489.3 391.9 L489.2 384.3 L489.3 377.0 L489.4 369.8 L489.1 362.5 L488.9 355.2 L488.3 347.9 L487.6 340.6 L487.8 333.2 L487.9 325.9 L488.5 318.5 L489.1 311.1 L488.9 303.7 L488.8 296.3 L488.9 288.9 L488.6 281.5 L488.3 274.2 L487.8 267.0 L487.6 259.3 L488.0 251.2 L488.1 242.8 L487.5 234.6 L486.5 226.9 L485.2 220.0 L484.2 214.2 L483.6 209.8 L483.2 211.7 L482.0 213.1 L480.2 213.6 L478.3 213.2 L476.9 212.0 Z" fill="#141414"/><path d="M478.9 212.6 L482.7 214.3 L487.8 216.1 L493.9 218.4 L500.5 221.4 L507.3 224.8 L514.3 228.4 L521.1 231.8 L527.5 235.2 L533.7 238.1 L540.3 240.4 L546.8 242.9 L553.3 245.5 L559.7 248.2 L566.1 250.7 L572.5 253.3 L578.7 256.1 L584.6 259.3 L590.6 262.3 L596.8 264.5 L603.0 266.8 L609.3 269.0 L615.6 271.3 L622.0 273.5 L628.4 275.9 L634.9 279.0 L641.9 282.4 L649.1 286.0 L656.4 289.2 L663.2 292.5 L669.3 295.3 L674.8 297.2 L678.8 298.6 L677.7 297.7 L677.2 296.3 L677.4 294.8 L678.3 293.7 L679.7 293.2 L681.1 293.5 L677.4 291.3 L672.4 288.5 L666.4 285.4 L659.5 282.4 L652.2 279.3 L644.8 275.9 L637.5 273.3 L630.9 270.3 L625.1 266.8 L619.4 263.2 L613.6 259.9 L607.6 257.1 L601.7 253.8 L595.8 250.7 L589.7 247.7 L583.3 245.4 L576.6 243.3 L570.2 240.6 L563.8 237.9 L557.2 235.5 L550.6 233.1 L544.3 230.1 L538.0 227.5 L531.4 225.4 L524.5 223.6 L517.2 221.3 L510.0 218.4 L502.6 216.1 L495.7 214.0 L489.7 211.5 L484.8 209.2 L481.1 207.4 L482.2 208.3 L482.8 209.6 L482.6 211.1 L481.7 212.2 L480.4 212.8 Z" fill="#141414"/><path d="M485.7 444.2 L489.8 441.7 L495.1 438.2 L501.3 434.0 L508.1 429.0 L515.3 424.0 L522.4 418.6 L529.1 413.1 L536.0 408.8 L542.5 404.8 L548.8 400.5 L554.6 395.6 L560.4 390.8 L566.3 385.9 L572.1 381.2 L577.5 375.7 L583.3 370.7 L589.5 366.5 L595.8 362.3 L602.0 358.0 L607.9 353.4 L614.2 349.2 L620.3 344.7 L626.4 340.2 L632.4 335.5 L638.8 330.6 L646.4 326.2 L654.2 321.7 L661.6 316.7 L668.3 311.6 L674.3 307.0 L679.1 302.8 L682.6 299.6 L680.5 300.4 L678.2 300.1 L676.4 298.6 L675.6 296.5 L675.9 294.2 L677.5 292.6 L673.2 294.8 L667.7 298.0 L661.5 302.4 L654.9 307.5 L647.9 313.1 L641.1 319.0 L634.5 324.7 L628.1 329.7 L621.7 333.7 L615.4 338.0 L609.5 342.8 L603.4 347.1 L597.3 351.6 L591.3 356.1 L585.4 360.8 L579.2 365.2 L572.8 369.2 L566.3 373.2 L559.6 376.9 L553.3 381.2 L547.0 385.5 L540.9 389.9 L534.9 394.7 L529.1 399.8 L523.0 405.1 L516.3 410.7 L509.1 416.0 L502.3 421.7 L496.1 427.3 L490.2 432.0 L485.6 436.4 L482.2 439.7 L483.6 439.1 L485.1 439.2 L486.3 440.2 L486.9 441.6 L486.8 443.1 Z" fill="#141414"/><path d="M675.2 150.0 L674.6 152.8 L673.9 156.6 L673.0 161.2 L671.9 166.2 L671.4 171.6 L671.8 177.0 L672.3 182.2 L672.7 187.1 L673.0 191.7 L673.2 196.3 L673.6 200.8 L674.1 205.2 L674.3 209.7 L674.5 214.2 L674.9 218.6 L675.3 223.1 L676.1 227.7 L676.9 232.4 L677.1 237.1 L676.7 241.8 L676.5 246.5 L676.2 251.2 L675.4 255.9 L674.7 260.5 L673.9 265.3 L673.8 270.3 L673.9 275.5 L674.4 280.6 L675.2 285.4 L675.7 289.6 L675.9 293.3 L676.2 296.0 L676.8 294.1 L678.1 292.7 L680.0 292.2 L681.9 292.8 L683.3 294.1 L683.5 296.0 L683.9 293.3 L684.7 289.7 L685.2 285.4 L685.5 280.6 L686.3 275.5 L686.7 270.4 L686.1 265.3 L685.3 260.5 L684.3 255.9 L683.9 251.2 L683.5 246.5 L683.3 241.8 L683.2 237.0 L683.1 232.3 L683.3 227.5 L683.9 222.9 L684.4 218.2 L684.1 213.7 L683.7 209.2 L683.5 204.7 L683.4 200.2 L683.5 195.8 L683.6 191.3 L683.4 186.9 L683.6 182.1 L684.1 176.9 L684.5 171.6 L684.0 166.3 L683.0 161.2 L681.8 156.7 L681.1 152.9 L680.9 150.0 L680.5 151.4 L679.4 152.5 L678.0 152.9 L676.6 152.5 L675.5 151.4 Z" fill="#141414"/><path d="M675.6 296.3 L675.2 299.7 L675.2 304.2 L675.5 309.5 L676.2 315.3 L677.2 321.5 L677.7 327.9 L677.7 334.1 L677.9 339.9 L678.3 345.4 L679.2 351.0 L679.9 356.7 L680.5 362.3 L680.9 368.0 L681.3 373.7 L681.3 379.4 L680.9 385.0 L680.3 390.7 L679.8 396.3 L679.9 401.9 L680.4 407.5 L680.7 413.1 L680.5 418.7 L679.8 424.2 L679.3 429.8 L679.1 435.6 L678.7 441.8 L678.3 448.2 L678.6 454.5 L679.6 460.5 L680.2 465.9 L680.9 470.5 L681.0 473.9 L681.4 472.4 L682.6 471.3 L684.1 471.0 L685.6 471.4 L686.7 472.6 L687.2 474.1 L687.6 470.7 L687.9 466.2 L689.4 460.9 L690.7 454.9 L691.6 448.6 L691.6 442.1 L691.2 435.8 L690.7 429.9 L690.4 424.3 L690.1 418.6 L689.7 413.0 L689.8 407.4 L689.9 401.8 L689.9 396.1 L689.3 390.5 L688.3 384.8 L687.4 379.2 L687.1 373.5 L687.1 367.8 L687.2 362.1 L687.3 356.4 L687.6 350.6 L687.9 345.0 L688.0 339.3 L687.2 333.5 L686.5 327.3 L686.2 320.9 L686.5 314.6 L686.4 308.7 L685.8 303.4 L685.0 299.0 L684.6 295.7 L684.1 298.0 L682.6 299.8 L680.3 300.6 L678.0 300.1 L676.2 298.6 Z" fill="#141414"/><path d="M489.7 218.0 L488.8 219.0 L487.6 220.0 L486.3 220.9 L484.8 221.6 L483.4 222.1 L482.0 222.4 L480.7 222.3 L479.3 221.9 L477.9 221.2 L476.6 220.5 L475.4 219.6 L474.3 218.8 L473.3 218.0 L472.5 217.2 L471.7 216.2 L471.1 215.3 L470.5 214.2 L470.0 213.2 L469.5 212.0 L469.1 210.8 L468.7 209.6 L468.5 208.3 L468.5 207.0 L468.7 205.9 L469.1 204.7 L469.8 203.6 L470.7 202.5 L471.7 201.4 L472.8 200.4 L473.9 199.6 L475.2 198.9 L476.7 198.2 L478.3 197.6 L479.9 197.2 L481.4 197.1 L482.7 197.2 L483.9 197.8 L484.9 198.8 L485.8 200.0 L486.7 201.4 L487.5 202.7 L488.2 203.9 L488.8 204.9 L489.4 206.0 L489.9 207.0 L490.3 208.0 L490.6 209.1 L490.8 210.2 L490.9 211.5 L490.9 212.8 L490.9 214.2 L490.7 215.6 L490.3 216.8 Z" fill="#141414"/><path d="M488.5 451.6 L487.2 451.9 L485.9 452.2 L484.7 452.3 L483.4 452.3 L482.1 452.3 L480.8 452.1 L479.5 451.8 L478.0 451.5 L476.6 451.0 L475.2 450.4 L474.0 449.7 L473.0 448.8 L472.3 447.7 L471.8 446.4 L471.4 444.9 L471.2 443.4 L471.2 442.0 L471.4 440.7 L471.8 439.5 L472.5 438.3 L473.3 437.2 L474.2 436.2 L475.3 435.2 L476.3 434.4 L477.3 433.7 L478.4 433.1 L479.6 432.5 L480.8 432.1 L482.1 431.8 L483.3 431.7 L484.6 431.7 L485.9 431.8 L487.2 432.0 L488.5 432.3 L489.7 432.8 L490.8 433.4 L491.7 434.1 L492.5 435.1 L493.1 436.1 L493.7 437.2 L494.3 438.4 L494.7 439.6 L495.2 440.8 L495.6 442.2 L496.0 443.7 L496.3 445.1 L496.3 446.4 L495.9 447.5 L495.2 448.5 L494.1 449.3 L492.8 450.0 L491.3 450.6 L489.8 451.2 Z" fill="#141414"/><path d="M673.3 160.8 L671.9 160.2 L670.5 159.5 L669.1 158.8 L667.8 157.9 L666.8 157.0 L666.0 155.9 L665.5 154.7 L665.3 153.3 L665.3 151.8 L665.4 150.3 L665.7 148.9 L666.1 147.6 L666.6 146.4 L667.3 145.4 L668.1 144.4 L669.0 143.4 L670.0 142.5 L671.0 141.6 L672.1 140.7 L673.3 139.7 L674.5 138.8 L675.8 138.0 L677.2 137.4 L678.5 137.1 L680.0 137.1 L681.6 137.4 L683.3 137.9 L684.8 138.6 L686.2 139.4 L687.4 140.3 L688.1 141.4 L688.7 142.7 L689.1 144.2 L689.3 145.6 L689.5 147.1 L689.6 148.5 L689.7 149.8 L689.7 151.2 L689.6 152.5 L689.4 153.8 L689.1 155.0 L688.6 156.2 L687.9 157.4 L687.0 158.7 L686.0 160.0 L684.8 161.1 L683.6 162.0 L682.3 162.5 L681.0 162.8 L679.5 162.7 L677.9 162.4 L676.3 161.9 L674.7 161.4 Z" fill="#141414"/><path d="M672.9 475.2 L673.0 474.0 L673.3 472.8 L673.7 471.8 L674.1 470.7 L674.7 469.7 L675.2 468.5 L675.8 467.3 L676.5 465.9 L677.2 464.5 L678.0 463.2 L678.9 462.1 L680.0 461.4 L681.4 461.0 L683.0 460.9 L684.7 461.1 L686.4 461.4 L688.0 461.9 L689.4 462.4 L690.6 463.2 L691.6 464.2 L692.5 465.4 L693.3 466.6 L694.0 467.9 L694.6 469.1 L695.2 470.3 L695.6 471.6 L696.0 472.9 L696.2 474.2 L696.2 475.5 L696.1 476.7 L695.7 478.0 L695.1 479.2 L694.3 480.4 L693.4 481.5 L692.4 482.5 L691.3 483.3 L690.2 483.9 L688.9 484.2 L687.6 484.5 L686.2 484.6 L684.7 484.6 L683.3 484.6 L681.7 484.7 L680.0 484.8 L678.3 484.8 L676.7 484.6 L675.3 484.3 L674.2 483.6 L673.5 482.6 L673.0 481.3 L672.8 479.7 L672.7 478.1 L672.8 476.5 Z" fill="#141414"/><path d="M672.7 285.7 L673.9 285.1 L675.3 284.8 L676.8 284.6 L678.3 284.6 L679.9 284.6 L681.4 284.7 L682.9 284.8 L684.6 284.9 L686.2 285.2 L687.8 285.5 L689.2 286.1 L690.4 286.8 L691.3 287.8 L692.1 289.1 L692.7 290.6 L693.2 292.1 L693.6 293.7 L693.8 295.2 L694.0 296.8 L694.1 298.5 L694.0 300.2 L693.8 301.9 L693.4 303.5 L692.7 304.8 L691.7 306.0 L690.3 307.1 L688.7 308.1 L687.0 309.0 L685.3 309.6 L683.6 310.0 L681.9 310.2 L680.1 310.2 L678.2 310.1 L676.4 309.7 L674.7 309.2 L673.3 308.5 L672.1 307.6 L671.1 306.4 L670.1 305.0 L669.4 303.6 L668.7 302.2 L668.2 300.8 L667.8 299.4 L667.5 298.0 L667.3 296.6 L667.3 295.2 L667.4 293.9 L667.7 292.6 L668.2 291.3 L668.8 290.0 L669.6 288.7 L670.6 287.5 L671.6 286.5 Z" fill="#d77f60"/></g><g transform="translate(44 936) scale(1.8) translate(-405 -560)"><path d="M405.2 562.2 L404.9 562.2 L404.7 562.2 L404.4 562.1 L404.2 562.0 L403.9 561.9 L403.7 561.7 L403.5 561.6 L403.3 561.4 L403.1 561.2 L402.9 561.0 L402.7 560.8 L402.6 560.6 L402.6 560.3 L402.6 560.0 L402.6 559.8 L402.6 559.5 L402.7 559.2 L402.8 559.0 L402.9 558.8 L403.2 558.7 L403.4 558.5 L403.7 558.4 L403.9 558.3 L404.2 558.3 L404.4 558.2 L404.6 558.2 L404.8 558.2 L405.1 558.2 L405.3 558.2 L405.5 558.2 L405.8 558.2 L406.1 558.3 L406.4 558.3 L406.7 558.4 L407.0 558.5 L407.2 558.6 L407.3 558.8 L407.3 559.1 L407.3 559.4 L407.3 559.7 L407.2 559.9 L407.2 560.2 L407.1 560.4 L407.0 560.7 L406.9 560.9 L406.8 561.1 L406.7 561.3 L406.5 561.4 L406.3 561.6 L406.1 561.8 L405.9 561.9 L405.7 562.1 L405.4 562.2 Z" fill="#141414"/><path d="M407.3 579.9 L407.3 580.2 L407.3 580.5 L407.3 580.8 L407.3 581.1 L407.2 581.3 L407.0 581.5 L406.9 581.7 L406.6 581.8 L406.3 581.9 L406.1 582.0 L405.8 582.1 L405.5 582.1 L405.2 582.2 L404.9 582.2 L404.6 582.2 L404.3 582.2 L404.1 582.1 L403.8 582.0 L403.7 581.9 L403.5 581.7 L403.4 581.5 L403.3 581.2 L403.2 581.0 L403.1 580.7 L403.0 580.5 L402.8 580.3 L402.8 580.0 L402.7 579.8 L402.7 579.5 L402.7 579.3 L402.7 579.0 L402.9 578.8 L403.0 578.5 L403.2 578.3 L403.4 578.1 L403.6 577.9 L403.9 577.8 L404.1 577.8 L404.4 577.7 L404.7 577.7 L405.1 577.8 L405.3 577.8 L405.6 577.9 L405.9 577.9 L406.2 578.0 L406.5 578.1 L406.7 578.3 L406.9 578.4 L407.0 578.6 L407.1 578.9 L407.2 579.1 L407.3 579.4 L407.3 579.7 Z" fill="#141414"/><path d="M404.0 598.3 L404.3 598.2 L404.5 598.0 L404.8 597.9 L405.0 597.8 L405.3 597.7 L405.5 597.7 L405.8 597.7 L406.0 597.8 L406.3 598.0 L406.5 598.2 L406.7 598.4 L406.9 598.6 L407.0 598.8 L407.1 599.1 L407.2 599.3 L407.2 599.6 L407.2 599.8 L407.2 600.1 L407.1 600.3 L407.1 600.5 L406.9 600.7 L406.8 600.9 L406.6 601.0 L406.5 601.2 L406.3 601.5 L406.2 601.7 L406.0 601.9 L405.8 602.2 L405.6 602.3 L405.4 602.4 L405.1 602.4 L404.9 602.4 L404.6 602.3 L404.3 602.2 L404.0 602.0 L403.8 601.9 L403.5 601.7 L403.3 601.5 L403.1 601.4 L402.9 601.2 L402.7 601.0 L402.6 600.7 L402.5 600.5 L402.4 600.2 L402.4 599.9 L402.4 599.6 L402.5 599.3 L402.5 599.1 L402.7 598.9 L402.9 598.8 L403.2 598.7 L403.5 598.5 L403.8 598.4 Z" fill="#141414"/><path d="M424.4 557.6 L424.6 557.6 L424.9 557.6 L425.2 557.7 L425.5 557.8 L425.8 558.0 L426.0 558.1 L426.3 558.2 L426.6 558.4 L426.8 558.5 L427.0 558.7 L427.2 558.9 L427.4 559.1 L427.4 559.3 L427.5 559.5 L427.4 559.8 L427.4 560.1 L427.3 560.4 L427.2 560.6 L427.1 560.9 L427.0 561.2 L426.9 561.4 L426.8 561.7 L426.7 561.9 L426.5 562.1 L426.2 562.2 L425.9 562.4 L425.6 562.4 L425.3 562.5 L425.0 562.5 L424.7 562.4 L424.4 562.3 L424.2 562.2 L424.0 562.0 L423.8 561.7 L423.7 561.5 L423.5 561.3 L423.4 561.1 L423.2 560.9 L423.1 560.7 L423.0 560.5 L423.0 560.3 L422.9 560.1 L422.9 559.9 L422.9 559.7 L423.0 559.5 L423.1 559.2 L423.2 559.0 L423.3 558.8 L423.4 558.6 L423.6 558.3 L423.8 558.1 L424.0 557.8 L424.2 557.7 Z" fill="#141414"/><path d="M427.3 579.5 L427.3 579.8 L427.3 580.1 L427.3 580.3 L427.3 580.6 L427.3 580.8 L427.2 581.1 L427.0 581.2 L426.8 581.4 L426.6 581.6 L426.4 581.7 L426.1 581.8 L425.8 581.9 L425.6 582.0 L425.3 582.1 L425.1 582.1 L424.8 582.1 L424.5 582.1 L424.3 582.1 L424.1 582.0 L423.8 581.9 L423.6 581.7 L423.4 581.5 L423.2 581.3 L423.1 581.1 L423.0 580.9 L422.9 580.7 L422.8 580.5 L422.8 580.2 L422.8 580.0 L422.8 579.7 L422.8 579.5 L422.9 579.2 L423.0 579.0 L423.1 578.7 L423.2 578.5 L423.4 578.3 L423.6 578.2 L423.8 578.0 L424.1 577.9 L424.3 577.8 L424.6 577.8 L424.9 577.7 L425.2 577.7 L425.5 577.7 L425.8 577.8 L426.1 577.8 L426.4 577.9 L426.6 578.0 L426.8 578.2 L426.9 578.4 L427.0 578.7 L427.1 579.0 L427.2 579.3 Z" fill="#141414"/><path d="M423.9 597.7 L424.1 597.6 L424.4 597.6 L424.8 597.5 L425.1 597.5 L425.4 597.6 L425.7 597.6 L426.0 597.7 L426.3 597.8 L426.6 598.0 L426.8 598.2 L427.1 598.3 L427.2 598.6 L427.4 598.8 L427.5 599.1 L427.5 599.4 L427.5 599.7 L427.5 600.0 L427.5 600.2 L427.4 600.4 L427.2 600.7 L427.1 600.8 L426.9 601.0 L426.7 601.2 L426.5 601.4 L426.3 601.6 L426.1 601.8 L425.9 602.0 L425.7 602.2 L425.5 602.4 L425.2 602.4 L424.9 602.5 L424.6 602.5 L424.3 602.4 L424.0 602.3 L423.7 602.2 L423.4 602.1 L423.2 601.9 L423.0 601.7 L422.8 601.4 L422.6 601.2 L422.5 600.9 L422.4 600.6 L422.4 600.4 L422.4 600.1 L422.5 599.8 L422.6 599.6 L422.7 599.3 L422.8 599.0 L423.0 598.8 L423.1 598.5 L423.3 598.3 L423.5 598.1 L423.7 597.9 Z" fill="#141414"/><path d="M444.5 558.1 L444.8 558.0 L445.1 557.9 L445.4 557.8 L445.7 557.8 L445.9 557.8 L446.2 557.8 L446.4 558.0 L446.6 558.1 L446.8 558.4 L447.0 558.6 L447.1 558.9 L447.2 559.1 L447.3 559.4 L447.3 559.6 L447.3 559.9 L447.2 560.1 L447.2 560.4 L447.1 560.6 L447.0 560.8 L446.8 561.0 L446.7 561.1 L446.5 561.3 L446.3 561.4 L446.1 561.6 L445.9 561.8 L445.7 561.9 L445.4 562.1 L445.2 562.3 L444.9 562.4 L444.7 562.4 L444.4 562.4 L444.1 562.4 L443.8 562.2 L443.5 562.1 L443.2 561.9 L443.0 561.7 L442.9 561.5 L442.9 561.3 L442.9 561.0 L442.9 560.7 L442.9 560.4 L443.0 560.1 L442.9 559.8 L442.9 559.5 L442.8 559.3 L442.8 559.0 L442.8 558.8 L442.9 558.6 L443.1 558.4 L443.3 558.3 L443.6 558.2 L443.9 558.2 L444.2 558.1 Z" fill="#141414"/><path d="M443.2 581.0 L443.1 580.8 L443.0 580.6 L442.9 580.4 L442.9 580.2 L442.8 580.0 L442.8 579.7 L442.8 579.5 L442.9 579.2 L442.9 578.9 L443.0 578.7 L443.1 578.4 L443.3 578.2 L443.5 578.1 L443.7 577.9 L444.0 577.7 L444.3 577.6 L444.6 577.5 L444.9 577.5 L445.1 577.6 L445.4 577.7 L445.6 577.9 L445.8 578.1 L446.0 578.3 L446.2 578.5 L446.5 578.7 L446.7 578.8 L446.9 579.0 L447.1 579.2 L447.3 579.3 L447.4 579.5 L447.4 579.7 L447.3 579.9 L447.2 580.2 L447.1 580.4 L446.9 580.6 L446.8 580.9 L446.7 581.1 L446.6 581.4 L446.4 581.6 L446.3 581.9 L446.1 582.0 L446.0 582.2 L445.7 582.2 L445.5 582.3 L445.2 582.2 L444.9 582.2 L444.6 582.1 L444.3 582.0 L444.1 581.9 L443.9 581.7 L443.7 581.6 L443.5 581.4 L443.4 581.2 Z" fill="#141414"/><path d="M447.0 598.3 L447.1 598.5 L447.2 598.7 L447.3 599.0 L447.3 599.3 L447.3 599.6 L447.4 599.9 L447.4 600.2 L447.4 600.5 L447.4 600.8 L447.4 601.1 L447.3 601.3 L447.2 601.5 L447.0 601.7 L446.7 601.8 L446.4 601.9 L446.1 602.0 L445.8 602.0 L445.5 602.0 L445.2 602.0 L445.0 602.0 L444.8 601.9 L444.5 601.9 L444.3 601.8 L444.1 601.7 L443.8 601.6 L443.6 601.5 L443.3 601.4 L443.1 601.2 L442.9 601.1 L442.8 600.9 L442.7 600.7 L442.7 600.4 L442.8 600.2 L442.9 599.9 L443.0 599.7 L443.1 599.5 L443.2 599.2 L443.3 599.0 L443.4 598.8 L443.5 598.6 L443.7 598.5 L443.8 598.3 L444.0 598.2 L444.3 598.1 L444.5 598.0 L444.8 597.9 L445.0 597.9 L445.3 597.9 L445.6 597.9 L445.9 597.9 L446.2 597.9 L446.5 598.0 L446.8 598.1 Z" fill="#141414"/></g></svg></div>
+<div class="ad-cover__text" style="top:305px">
+  <h1 class="ad-cover__title">Airline Reservation System</h1>
+  <p class="ad-cover__name" style="font-size:40px;margin:38px 0 18px;color:var(--ad-ink-soft)">Hệ thống Đặt vé &amp; Điều phối Chuyến bay</p>
+  <p class="ad-cover__role" style="line-height:1.6">Đồng Việt Hưng (B24DCCE117) · Dương Kim Sang (B24DCCE236)<br>Lê Bảo Phúc (B24DCCE215) · Nguyễn Hữu Phi Long (B24DCCE166)<br><span style="color:var(--ad-ink-soft)">GVHD: ThS. Phạm Hoàng Việt · Đề tài 21 (Advanced)</span></p>
+</div>
+</section>
+
+<!-- ===== 2. timeline ===== -->
+<section class="ad-slide" data-layout="timeline"
+  aria-label="Slide 2: 6 Milestones"
+  data-pptx-notes="Để xây dựng một hệ thống vừa chặt chẽ về nghiệp vụ vừa dễ mở rộng, nhóm không viết code ngay từ đầu mà phát triển tuần tự qua 6 cột mốc. Từ phân tích yêu cầu ở Milestone 1–2, thiết kế sơ đồ lớp UML ở Milestone 3, hiện thực hóa lõi Java 25 với 52 unit test ở Milestone 4, cho đến bước nhảy vọt ở Milestone 5 và 6: áp dụng 3 mẫu thiết kế kinh điển (State, Strategy, Factory), xây dựng giao diện đồ họa JavaFX 25 theo chuẩn Passive View và nâng tổng số bài kiểm thử tự động lên 85 bài.">
+<h2 class="ad-title">Hành trình phát triển qua sáu cột mốc</h2>
+<div class="ad-abs" style="inset:0">
+<div class="ad-tl__axis"></div>
+<div class="ad-tl__stem" style="left:220px;top:336px;height:114px"></div>
+<div class="ad-tl__stem" style="left:515px;top:336px;height:389px"></div>
+<div class="ad-tl__stem" style="left:815px;top:336px;height:74px"></div>
+<div class="ad-tl__stem" style="left:1125px;top:336px;height:374px"></div>
+<div class="ad-tl__stem" style="left:1430px;top:336px;height:54px"></div>
+<div class="ad-tl__item" style="left:220px"><div class="ad-tl__label">M1 · Problem</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:515px"><div class="ad-tl__label">M2 · Analysis</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:815px"><div class="ad-tl__label">M3 · UML</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:1125px"><div class="ad-tl__label">M4 · Java 25</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:1430px"><div class="ad-tl__label">M5 · Patterns</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:1745px"><div class="ad-tl__label">TODAY</div><div class="ad-tl__dot ad-tl__dot--today"></div></div>
+
+<div class="ad-window" style="position:absolute;left:80px;top:450px;width:340px;height:230px;padding:22px 24px;border-radius:18px">
+  <div class="ad-mono" style="font-size:17px;color:var(--ad-clay)">M1–M2 · Domain CRC</div>
+  <div class="ad-serif" style="font-size:30px;margin-top:10px;font-weight:500">11 core classes</div>
+  <div class="ad-mono" style="font-size:17px;line-height:1.5;margin-top:10px;color:var(--ad-muted)">Passenger &amp; Admin<br>Flight · Seat · Booking<br>Airport · Aircraft</div>
+</div>
+
+<div style="position:absolute;left:365px;top:725px;width:375px;height:255px;background:#262624;border-radius:14px;padding:18px 22px;color:#eeeee5;box-shadow:var(--ad-shadow-float)">
+  <div style="display:flex;gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i></div>
+  <div class="ad-mono" style="font-size:17px;margin-top:16px;border:1px solid #55564d;border-radius:6px;padding:7px 12px"><span class="ad-clay">&gt;</span> mvnw test (M4)</div>
+  <div class="ad-mono ad-clay" style="font-size:56px;line-height:1.05;margin-top:26px;letter-spacing:.02em;font-weight:700">52<br>TESTS</div>
+</div>
+
+<div style="position:absolute;left:615px;top:410px;width:415px;height:195px;background:var(--ad-clay);border-radius:30px;padding:24px 30px;color:#fff">
+  <div class="ad-serif" style="font-size:32px;text-align:center;font-weight:500">M3 · ADR-0001 UML</div>
+  <div style="display:flex;gap:14px;justify-content:center;margin-top:24px">
+    <div style="width:74px;height:74px;border-radius:16px;background:var(--ad-paper);color:var(--ad-ink);display:grid;place-items:center"><svg style="width:42px;height:42px" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-layers"/></svg></div>
+    <div style="width:74px;height:74px;border-radius:16px;background:var(--ad-paper);color:var(--ad-ink);display:grid;place-items:center"><svg style="width:42px;height:42px" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-nodes"/></svg></div>
+    <div style="width:74px;height:74px;border-radius:16px;background:var(--ad-paper);color:var(--ad-ink);display:grid;place-items:center"><svg style="width:42px;height:42px" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-shield"/></svg></div>
+    <div style="width:74px;height:74px;border-radius:16px;background:var(--ad-paper);color:var(--ad-ink);display:grid;place-items:center"><svg style="width:42px;height:42px" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-code"/></svg></div>
+  </div>
+</div>
+
+<div class="ad-window" style="position:absolute;left:935px;top:710px;width:455px;height:280px;padding:22px 24px;border-radius:16px;background:var(--ad-status-info-bg)">
+  <div class="ad-mono" style="font-size:18px;color:var(--ad-status-info-fg)">M5 · SOLID &amp; Patterns</div>
+  <div style="background:var(--ad-surface-raised);border:1px solid var(--ad-hairline);border-radius:12px;padding:12px 16px;margin-top:12px">
+    <div style="font-size:20px;color:var(--ad-status-info-fg);font-weight:600">State &amp; Strategy</div>
+    <div class="ad-mono" style="font-size:16px;margin-top:4px;color:var(--ad-ink-soft)">BookingState (5) · PaymentStrategy (4)</div>
+  </div>
+  <div style="background:var(--ad-surface);border:1px solid var(--ad-hairline);border-radius:12px;padding:12px 16px;margin-top:10px">
+    <div style="font-size:20px;color:var(--ad-status-info-fg);font-weight:600">Factory Pattern</div>
+    <div class="ad-mono" style="font-size:16px;margin-top:4px;color:var(--ad-ink-soft)">SeatFactory · PaymentFactory</div>
+  </div>
+</div>
+
+<div class="ad-window" style="position:absolute;left:1315px;top:390px;width:515px;height:260px;padding:24px 28px;border-radius:18px;background:var(--ad-sage)">
+  <div class="ad-mono" style="font-size:18px;color:var(--ad-ink-soft)">M6 · Final Product (TODAY)</div>
+  <div class="ad-serif" style="font-size:34px;font-weight:500;margin-top:10px">JavaFX 25 SPA &amp; 85 Tests</div>
+  <div class="ad-mono" style="font-size:18px;line-height:1.55;margin-top:14px;color:var(--ad-ink-soft)">Passive View MVC (ADR-0005/0006)<br>SeatSelectionDialog (2-AISLE-2)<br>85 JUnit 5 Tests · 0 Failures</div>
+</div>
+</div>
+</section>
+
+<!-- ===== 3. pillars ===== -->
+<section class="ad-slide" data-layout="pillars"
+  aria-label="Slide 3: Problem Analysis"
+  data-pptx-notes="Đề tài 21 đặt ra bài toán thực tế phức tạp hơn nhiều so với CRUD thông thường. Hệ thống giải quyết 3 bài toán cốt lõi: Thứ nhất là hành trình của hành khách từ tìm chuyến, chọn từng vị trí ghế trên tàu bay, giữ chỗ chờ thanh toán đến làm thủ tục check-in. Thứ hai là công cụ điều phối của Admin quản lý đội tàu bay và lịch trình. Thứ ba — quan trọng nhất về mặt kỹ thuật — là bảo toàn các bất biến nghiệp vụ: không bao giờ để 2 người giữ cùng 1 ghế và tự động giải phóng ghế/hoàn tiền khi có sự cố hủy chuyến.">
+<h2 class="ad-title">Ba bài toán cốt lõi của đặt vé hàng không</h2>
+<div class="ad-content" style="top:255px;bottom:125px">
+  <div class="ad-pillars">
+    <div class="ad-pillar">
+      <svg class="ad-pillar__icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-user"/></svg>
+      <h3 class="ad-pillar__title">Luồng <b>Passenger</b></h3>
+      <p class="ad-pillar__text">Tìm chuyến bay theo tuyến ngày, chọn ghế trên sơ đồ khoang, giữ chỗ PENDING, thanh toán lại, check-in hoặc hủy vé.</p>
+    </div>
+    <div class="ad-pillar">
+      <svg class="ad-pillar__icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-server"/></svg>
+      <h3 class="ad-pillar__title">Điều phối <b>Admin</b></h3>
+      <p class="ad-pillar__text">Quản lý danh mục sân bay, tàu bay (A320neo, 787-9), mở chuyến mới và điều khiển vòng đời vận hành theo thời gian thực.</p>
+    </div>
+    <div class="ad-pillar">
+      <svg class="ad-pillar__icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-shield"/></svg>
+      <h3 class="ad-pillar__title">Bất biến <b>Invariants</b></h3>
+      <p class="ad-pillar__text">Chống đặt trùng ghế, cô lập sơ đồ ghế giữa các chuyến bay dùng chung tàu bay và tự động hoàn tiền khi hủy chuyến.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== 4. dashed-system ===== -->
+<section class="ad-slide ad-slide--stone" data-layout="dashed-system"
+  aria-label="Slide 4: UML & Passive View Architecture"
+  data-pptx-notes="Về mô hình hóa đối tượng và kiến trúc tổng thể (theo ADR-0005 và ADR-0006), toàn bộ 38 lớp và giao diện của dự án được chia làm 3 tầng rõ rệt. Điểm đắt giá nhất trong thiết kế này là mẫu Passive View qua lớp ReservationGuiController: các màn hình JavaFX chỉ làm nhiệm vụ hiển thị và bắt sự kiện, tuyệt đối không chứa logic nghiệp vụ; ngược lại, tầng miền và controller hoàn toàn không phụ thuộc vào bất kỳ lớp đồ họa javafx.* nào. Nhờ đó, toàn bộ luồng điều khiển giao diện có thể chạy kiểm thử tự động trong tích tắc mà không cần mở cửa sổ thật.">
+<h2 class="ad-title">Passive View tách biệt giao diện và miền</h2>
+<div class="ad-abs ad-region" style="left:82px;top:245px;width:597px;height:760px"></div>
+<div class="ad-abs ad-region" style="left:1238px;top:245px;width:600px;height:760px"></div>
+<div class="ad-abs" style="left:122px;top:795px;width:1676px;border-top:3px dashed var(--ad-stone-500)"></div>
+
+<div class="ad-abs" style="left:125px;top:290px;width:508px"><div class="ad-session" style="padding:20px 26px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">PassengerWorkspaceView <i>SPA</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div></div>
+<div class="ad-abs" style="left:125px;top:448px;width:508px"><div class="ad-session" style="padding:20px 26px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">SeatSelectionDialog <i>2-2 Map</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div></div>
+<div class="ad-abs" style="left:125px;top:606px;width:508px"><div class="ad-session" style="padding:20px 26px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">AdminWorkspaceView <i>KPI</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div></div>
+
+<div class="ad-abs ad-node ad-node--deep" style="left:770px;top:375px;width:380px;height:255px;padding:34px 32px;border-radius:20px;background:var(--ad-stone-200)">
+  <div class="ad-node__title ad-node__title--mono" style="font-size:28px">GuiController</div>
+  <ul class="ad-monolist" style="margin-top:20px;font-size:22px;line-height:1.55">
+    <li>searchFlights()</li>
+    <li class="hl">holdBooking()</li>
+    <li>payForBooking()</li>
+    <li>cancelFlight()</li>
+  </ul>
+</div>
+
+<div class="ad-abs" style="left:1340px;top:292px;width:396px;height:64px;background:var(--ad-sage);border-radius:10px;display:grid;place-items:center;font-family:var(--ad-font-mono);font-size:23px;font-weight:600;color:var(--ad-ink)">AirlineReservationSystem</div>
+<div class="ad-abs ad-node ad-node--deep" style="left:1340px;top:388px;width:396px;height:336px;padding:28px 26px;text-align:center;border-radius:16px">
+  <div class="ad-serif" style="font-size:34px">Domain &amp; Patterns</div>
+  <div style="font-weight:500;font-size:23px;color:var(--ad-ink-soft);line-height:1.75;margin-top:16px">Flight · Seat · Aircraft<br>BookingState (5 states)<br>PaymentStrategy (4)<br>Seat &amp; Payment Factories</div>
+</div>
+
+<div class="ad-abs ad-region__label" style="left:135px;top:822px;width:490px;font-size:26px">
+  <div style="display:grid;place-items:center;margin-bottom:8px"><svg style="width:56px;height:56px;color:var(--ad-ink)" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-window"/></svg></div>
+  <b>JavaFX 25 SPA Views</b>Chỉ hiển thị &amp; bắt sự kiện
+</div>
+<div class="ad-abs ad-region__label" style="left:1265px;top:822px;width:546px;font-size:26px">
+  <div style="display:grid;place-items:center;margin-bottom:8px"><svg style="width:56px;height:56px;color:var(--ad-ink)" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-layers"/></svg></div>
+  <b>38 Domain &amp; Pattern Types</b>Thuần Java 25 · Không phụ thuộc JavaFX
+</div>
+
+<svg class="ad-lines" viewBox="0 0 1920 1080">
+  <path class="ad-stroke" d="M645 345 L756 440" marker-end="url(#ad-ah)"/>
+  <path class="ad-stroke" d="M645 503 H756" marker-end="url(#ad-ah)"/>
+  <path class="ad-stroke" d="M756 525 H645" marker-end="url(#ad-ah)"/>
+  <path class="ad-stroke" d="M645 660 L756 565" marker-end="url(#ad-ah)"/>
+  <path class="ad-stroke" d="M1162 490 H1324" marker-end="url(#ad-ah)"/>
+  <path class="ad-stroke" d="M1324 514 H1162" marker-end="url(#ad-ah)"/>
+  <path class="ad-stroke" d="M1538 358 V382" marker-end="url(#ad-ah)"/>
+</svg>
+</section>
+
+<!-- ===== 5. split-fanout ===== -->
+<section class="ad-slide ad-slide--split" data-layout="split-fanout"
+  aria-label="Slide 5: Encapsulation & Flight-Seat Composition"
+  data-pptx-notes="Ở tiêu chí Đóng gói và Quan hệ giữa các lớp, quyết định thiết kế quan trọng nhất của nhóm được ghi trong ADR-0001. Một chiếc tàu bay ngoài đời thực bay nhiều chặng mỗi ngày; nếu đặt danh sách ghế nằm trong lớp Aircraft, việc đặt ghế ở chuyến sáng sẽ làm mất ghế ở chuyến chiều. Vì vậy, nhóm thiết kế quan hệ Association giữa Flight và Aircraft, nhưng dùng quan hệ Composition (sở hữu chặt) giữa Flight và Seat: mỗi chuyến bay tự sinh và quản lý sơ đồ ghế riêng. Đồng thời, mọi getter trả về danh sách đều bọc qua List.copyOf, ngăn chặn hoàn toàn việc code bên ngoài tự ý thêm/xóa phần tử mà không qua kiểm tra nghiệp vụ.">
+<div class="ad-split__left">
+  <h2 class="ad-title" style="font-size:74px">Mỗi chuyến bay sở hữu sơ đồ ghế riêng</h2>
+  <div class="ad-points" style="margin-top:44px">
+    <div class="ad-point"><h3 class="ad-point__h">Composition (ADR-0001)</h3><p class="ad-point__p">Flight tự khởi tạo Map&lt;String, Seat&gt; riêng thay vì dùng chung trong Aircraft.</p></div>
+    <div class="ad-point"><h3 class="ad-point__h">Cô lập trạng thái</h3><p class="ad-point__p">Đặt ghế 1A trên VN101 không ảnh hưởng tới ghế 1A trên VN205.</p></div>
+    <div class="ad-point"><h3 class="ad-point__h">Đóng gói bất biến</h3><p class="ad-point__p">Trường private/protected; danh sách trả về bọc qua List.copyOf.</p></div>
+  </div>
+</div>
+<div class="ad-split__right">
+  <div class="ad-abs" style="left:223px;top:96px;width:798px;display:grid;gap:14px">
+    <div class="ad-session" style="padding:18px 22px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">Flight VN101 <i>HAN → SGN · AC-320</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div>
+    <div class="ad-session" style="padding:18px 22px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">Flight VN205 <i>SGN → DAD · AC-320</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div>
+    <div class="ad-session" style="padding:18px 22px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">Flight VN309 <i>DAD → HAN · AC-320</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div>
+  </div>
+  <svg class="ad-lines" viewBox="0 0 1242 1080">
+    <path class="ad-stroke ad-stroke--soft" d="M362 478 L380 650"/>
+    <path class="ad-stroke ad-stroke--soft" d="M442 478 L850 650"/>
+    <path class="ad-stroke ad-stroke--soft" d="M522 478 L380 650"/>
+    <path class="ad-stroke ad-stroke--soft" d="M622 478 L850 650"/>
+    <path class="ad-stroke ad-stroke--soft" d="M702 478 L380 650"/>
+    <path class="ad-stroke ad-stroke--soft" d="M782 478 L850 650"/>
+  </svg>
+  <div class="ad-abs ad-node" style="left:165px;top:650px;width:430px;height:315px;padding:34px 32px">
+    <span class="ad-tag">read-only</span>
+    <div class="ad-node__title ad-node__title--mono" style="margin-top:24px;font-size:28px">Aircraft AC-320</div>
+    <ul class="ad-monolist" style="margin-top:18px;font-size:23px">
+      <li>model: A320neo</li>
+      <li>totalSeats: 16</li>
+      <li>config: 4 seats / row</li>
+      <li>shared template</li>
+    </ul>
+  </div>
+  <div class="ad-abs ad-node" style="left:645px;top:650px;width:430px;height:315px;padding:34px 32px">
+    <span class="ad-tag ad-tag--clay">read-write</span>
+    <div class="ad-node__title ad-node__title--mono" style="margin-top:24px;font-size:28px">Flight.seats</div>
+    <ul class="ad-monolist" style="margin-top:18px;font-size:23px">
+      <li>VN101 1A: OCCUPIED</li>
+      <li class="hl">VN205 1A: AVAILABLE</li>
+      <li>VN309 1A: RESERVED</li>
+      <li>List.copyOf(seats)</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- ===== 6. tint-cards ===== -->
+<section class="ad-slide" data-layout="tint-cards"
+  aria-label="Slide 6: Inheritance, Abstraction & Polymorphism"
+  data-pptx-notes="Về Kế thừa, Trừu tượng và Đa hình, hệ thống xây dựng 3 trục rõ ràng. Trục thứ nhất là lớp trừu tượng Person chia sẻ thông tin định danh cho Passenger và Admin. Trục thứ hai là lớp trừu tượng Seat với phương thức calculatePrice(basePrice): ghế Thương gia nhân hệ số 2.0 kèm phòng chờ, ghế Phổ thông hàng đầu cộng phụ phí chỗ để chân rộng 1.15x. Nhờ đa hình động, hàm tính tổng tiền của đơn đặt vé chỉ cần gọi selectedSeats.stream().mapToDouble(s -&gt; s.calculatePrice(basePrice)).sum() — hoàn toàn sạch bóng if-else hay instanceof. Trục thứ ba là giao diện hàm PaymentStrategy phục vụ đa hình các phương thức thanh toán.">
+<h2 class="ad-title">Đa hình loại bỏ rẽ nhánh kiểm tra kiểu</h2>
+<div class="ad-abs" style="left:90px;right:90px;top:308px">
+  <div class="ad-cards">
+    <div class="ad-card ad-card--sage" style="padding:50px 40px;min-height:610px">
+      <svg class="ad-card__icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-user"/></svg>
+      <h3 class="ad-card__title">Person (abstract)</h3>
+      <ul class="ad-list">
+        <li>Passenger lưu số hộ chiếu và lịch sử đặt vé</li>
+        <li>Admin giữ staffCode cùng quyền điều phối bay</li>
+      </ul>
+    </div>
+    <div class="ad-card ad-card--lavender" style="padding:50px 40px;min-height:610px">
+      <svg class="ad-card__icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-layers"/></svg>
+      <h3 class="ad-card__title">Seat (abstract)</h3>
+      <ul class="ad-list">
+        <li>BusinessSeat (2.0x) kèm quyền vào phòng chờ</li>
+        <li>EconomySeat (1.15x hàng đầu hoặc 1.0x)</li>
+      </ul>
+    </div>
+    <div class="ad-card ad-card--peach" style="padding:50px 40px;min-height:610px">
+      <svg class="ad-card__icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-key"/></svg>
+      <h3 class="ad-card__title">PaymentStrategy</h3>
+      <ul class="ad-list">
+        <li>@FunctionalInterface nhận cả lớp thật và Lambda</li>
+        <li>Tính tổng tiền qua Stream, không instanceof</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== 7. two-panel ===== -->
+<section class="ad-slide" data-layout="two-panel"
+  aria-label="Slide 7: Collections, Generics & Exceptions"
+  data-pptx-notes="Ở tiêu chí số 7 về Collections, Generics và Xử lý ngoại lệ: Nhóm chọn LinkedHashMap thay vì ArrayList hay HashMap thông thường cho toàn bộ danh mục hệ thống và sơ đồ ghế, vì chúng ta cần cả hai đặc tính: tốc độ tra cứu theo mã O(1) và giữ nguyên thứ tự ghế từ hàng 1 đến hàng cuối khi vẽ lên giao diện. Về xử lý ngoại lệ (ADR-0003), toàn bộ 6 lớp ngoại lệ miền đều kế thừa từ AirlineReservationException mở rộng RuntimeException. Việc dùng Unchecked Exception theo phong cách Spring/Hibernate hiện đại giúp các biểu thức Stream API và giao diện PaymentStrategy không bị ô nhiễm bởi từ khóa throws, trong khi tầng GUI vẫn bắt và hiển thị thông báo lỗi chính xác theo từng tình huống nghiệp vụ.">
+<h2 class="ad-title">Collections O(1) và phân cấp ngoại lệ miền</h2>
+<div class="ad-abs ad-panel" style="left:90px;top:295px;width:837px;height:690px;padding:40px 44px">
+  <h3 class="ad-panel__title" style="margin-bottom:32px">Collections, Generics &amp; Stream API</h3>
+  <div style="display:grid;gap:14px">
+    <div class="ad-session" style="padding:16px 20px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">LinkedHashMap&lt;String, V&gt; <i>O(1) + order</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div>
+    <div class="ad-session" style="padding:16px 20px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">HashSet&lt;Seat&gt; <i>chống chọn trùng ghế</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div>
+    <div class="ad-session" style="padding:16px 20px"><div class="ad-session__tile"></div><div class="ad-session__body"><div class="ad-session__name">&lt;T&gt; T findById(Map) <i>generic lookup</i></div><div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div></div></div>
+  </div>
+  <div class="ad-node ad-node--paper" style="margin-top:20px;padding:20px 26px;border-radius:16px">
+    <div class="ad-mono" style="font-size:21px;color:var(--ad-ink-soft);line-height:1.45">Stream API: lọc chuyến bay khả dụng và tính tổng vé đa hình trong một biểu thức sạch.</div>
+  </div>
+</div>
+
+<div class="ad-abs ad-panel" style="left:994px;top:295px;width:837px;height:690px;padding:40px 44px">
+  <h3 class="ad-panel__title" style="margin-bottom:32px">Unchecked Exceptions (ADR-0003)</h3>
+  <div class="ad-session" style="padding:16px 20px">
+    <div class="ad-session__tile"></div>
+    <div class="ad-session__body">
+      <div class="ad-session__name">AirlineReservationException <i>RuntimeException</i></div>
+      <div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px">
+    <div class="ad-node ad-node--paper" style="padding:16px 20px;border-radius:14px"><div class="ad-mono" style="font-size:20px;color:var(--ad-ink);font-weight:600">ValidationException</div><div style="font-size:21px;color:var(--ad-muted);margin-top:4px">Dữ liệu rỗng / sai định dạng</div></div>
+    <div class="ad-node ad-node--paper" style="padding:16px 20px;border-radius:14px"><div class="ad-mono" style="font-size:20px;color:var(--ad-ink);font-weight:600">EntityNotFoundException</div><div style="font-size:21px;color:var(--ad-muted);margin-top:4px">Không tồn tại mã tra cứu</div></div>
+    <div class="ad-node ad-node--paper" style="padding:16px 20px;border-radius:14px"><div class="ad-mono" style="font-size:20px;color:var(--ad-ink);font-weight:600">DuplicateEntityException</div><div style="font-size:21px;color:var(--ad-muted);margin-top:4px">Trùng khóa chính / CCCD</div></div>
+    <div class="ad-node ad-node--paper" style="padding:16px 20px;border-radius:14px"><div class="ad-mono" style="font-size:20px;color:var(--ad-ink);font-weight:600">SeatNotAvailableException</div><div style="font-size:21px;color:var(--ad-muted);margin-top:4px">Ghế đã giữ hoặc sai chuyến</div></div>
+    <div class="ad-node ad-node--paper" style="padding:16px 20px;border-radius:14px"><div class="ad-mono" style="font-size:20px;color:var(--ad-ink);font-weight:600">InvalidStateException</div><div style="font-size:21px;color:var(--ad-muted);margin-top:4px">Vi phạm chuyển đổi FSM</div></div>
+    <div class="ad-node ad-node--paper" style="padding:16px 20px;border-radius:14px"><div class="ad-mono" style="font-size:20px;color:var(--ad-ink);font-weight:600">PaymentException</div><div style="font-size:21px;color:var(--ad-muted);margin-top:4px">Lệch số tiền / hoàn tiền lỗi</div></div>
+  </div>
+</div>
+</section>
+
+<!-- ===== 8. container-flow ===== -->
+<section class="ad-slide" data-layout="container-flow"
+  aria-label="Slide 8: State Pattern & Cascade Lifecycle"
+  data-pptx-notes="Bước sang Milestone 5 — Cải tiến thiết kế theo SOLID và Design Patterns (ADR-0004): Thay vì để lớp Booking phình to với hàng loạt câu lệnh switch-case kiểm tra trạng thái, nhóm áp dụng State Pattern thông qua giao diện BookingState và 5 lớp trạng thái cụ thể. Mỗi lớp trạng thái tự quyết định hành động nào được phép và hành động nào bị chặn bởi InvalidStateException. Đặc biệt, State Pattern phối hợp cực kỳ ăn khớp với hiệu ứng dây chuyền khi vận hành chuyến bay: khi Admin hủy một chuyến bay, hệ thống kích hoạt onFlightCancelled trên từng đơn, tự động giải phóng ghế về AVAILABLE và hoàn tiền REFUNDED cho toàn bộ hành khách đã thanh toán mà không bỏ sót bất kỳ trường hợp biên nào.">
+<h2 class="ad-title">State Pattern đóng gói vòng đời đặt chỗ</h2>
+<div class="ad-abs ad-container" style="left:156px;top:205px;width:1611px;height:801px">
+  <div class="ad-abs" style="left:108px;top:48px;width:540px;font-size:26px;color:var(--ad-ink-soft)">5 Singleton States của BookingState</div>
+  <div class="ad-abs" style="left:108px;top:94px;width:540px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div style="background:var(--ad-sage);border-radius:8px;display:grid;place-items:center;font-size:24px;height:74px;color:var(--ad-ink)">Pending (RESERVED)</div>
+    <div style="background:var(--ad-sage);border-radius:8px;display:grid;place-items:center;font-size:24px;height:74px;color:var(--ad-ink)">Confirmed (OCCUPIED)</div>
+    <div style="background:var(--ad-sage);border-radius:8px;display:grid;place-items:center;font-size:24px;height:74px;color:var(--ad-ink)">CheckedIn</div>
+    <div style="background:var(--ad-sage);border-radius:8px;display:grid;place-items:center;font-size:24px;height:74px;color:var(--ad-ink)">Completed / Cancelled</div>
+  </div>
+  <div class="ad-abs ad-node ad-node--paper" style="left:692px;top:110px;width:430px;height:112px;padding:0;display:grid;place-items:center;text-align:center;font-size:25px;color:var(--ad-ink-soft);border-radius:14px;line-height:1.3"><b>BookingState Interface</b>Không còn switch-case</div>
+  <div class="ad-abs ad-node ad-node--deep" style="left:392px;top:330px;width:536px;height:138px;padding:0;display:grid;place-items:center;text-align:center;border-radius:14px">
+    <div><div class="ad-serif" style="font-size:35px">Flight Lifecycle Cascade</div><div class="ad-mono" style="font-size:22px;color:var(--ad-body);margin-top:4px">cancelFlight() · arriveFlight()</div></div>
+  </div>
+  <div class="ad-abs ad-node ad-node--lavender" style="left:392px;top:518px;width:536px;height:234px;padding:22px 26px;border-radius:14px">
+    <div style="font-size:27px;text-align:center;color:var(--ad-ink)">Đồng bộ trạng thái tự động (ADR-0004)</div>
+    <div style="background:var(--ad-surface);border-radius:8px;text-align:center;padding:13px;margin-top:14px;font-size:23px;color:var(--ad-ink-soft)">Hủy chuyến → Ghế AVAILABLE + REFUNDED</div>
+    <div style="background:var(--ad-surface);border-radius:8px;text-align:center;padding:13px;margin-top:12px;font-size:23px;color:var(--ad-ink-soft)">Hạ cánh → CHECKED_IN thành COMPLETED</div>
+  </div>
+  <div class="ad-abs" style="left:1235px;top:330px;width:320px;font-size:29px;line-height:1.35;color:var(--ad-body)">Mọi trạng thái kết thúc từ chối sửa đổi bằng <b style="color:var(--ad-ink)">InvalidStateException</b></div>
+  <svg class="ad-lines" viewBox="0 0 1611 801">
+    <path class="ad-stroke" d="M660 264 V318" marker-end="url(#ad-ah)"/>
+    <path class="ad-stroke" d="M660 474 V506" marker-end="url(#ad-ah)"/>
+    <path class="ad-stroke" d="M936 638 H1190 V166 H1134" marker-end="url(#ad-ah)"/>
+  </svg>
+</div>
+</section>
+
+<!-- ===== 9. split-diagram ===== -->
+<section class="ad-slide ad-slide--split" data-layout="split-diagram"
+  aria-label="Slide 9: Strategy & Factory Patterns (SOLID)"
+  data-pptx-notes="Bên cạnh State Pattern, nhóm áp dụng thêm hai mẫu thiết kế là Strategy Pattern và Factory Pattern. Với PaymentStrategy (ADR-0002), bản ghi giao dịch Payment chỉ lưu trạng thái tiền tệ, còn thuật toán xác thực và trừ tiền được ủy quyền cho 4 chiến lược: Thẻ ngân hàng, Ví điện tử, Chuyển khoản và Tiền mặt — tuân thủ chặt chẽ nguyên lý Đóng-Mở (OCP) và Đảo ngược phụ thuộc (DIP). Với SeatFactory và PaymentFactory, trách nhiệm khởi tạo phức tạp (như tính toán tỷ lệ 20% ghế Thương gia, gán hàng ghế Extra Legroom 1.15x) được tách rời hoàn toàn khỏi thực thể Flight, giữ cho mỗi lớp chỉ đảm nhận đúng một trách nhiệm duy nhất theo nguyên lý SRP.">
+<div class="ad-split__left">
+  <h2 class="ad-title" style="font-size:74px">Mở rộng theo nguyên lý SOLID</h2>
+  <div class="ad-points" style="margin-top:44px">
+    <div class="ad-point"><h3 class="ad-point__h">Open / Closed (OCP)</h3><p class="ad-point__p">Thêm cổng thanh toán mới không sửa Booking hay System.</p></div>
+    <div class="ad-point"><h3 class="ad-point__h">Single Responsibility</h3><p class="ad-point__p">Tách khởi tạo sơ đồ ghế ra SeatFactory và giao dịch ra PaymentFactory.</p></div>
+    <div class="ad-point"><h3 class="ad-point__h">Dependency Inversion</h3><p class="ad-point__p">Tầng điều phối chỉ phụ thuộc vào abstraction PaymentStrategy.</p></div>
+  </div>
+</div>
+<div class="ad-split__right">
+  <div class="ad-abs" style="left:98px;top:82px;width:1046px">
+    <div class="ad-session" style="padding:26px 28px">
+      <div class="ad-session__tile"></div>
+      <div class="ad-session__body">
+        <div class="ad-session__name">SeatFactory &amp; PaymentFactory <i>createSeats · createPayment</i></div>
+        <div class="ad-session__track"><span></span><span class="on"></span><span></span><span class="on"></span><span class="hot"></span><span></span></div>
+      </div>
+    </div>
+  </div>
+  <svg class="ad-lines" viewBox="0 0 1242 1080" style="left:0">
+    <path class="ad-stroke" d="M564 235 V322" marker-end="url(#ad-ah)"/>
+    <path class="ad-stroke" d="M678 322 V235" marker-end="url(#ad-ah)"/>
+  </svg>
+  <div class="ad-abs ad-node" style="left:336px;top:338px;width:570px;height:316px;padding:34px 44px">
+    <div class="ad-node__title ad-node__title--mono" style="font-size:29px">PaymentStrategy (ADR-0002)</div>
+    <ul class="ad-monolist" style="margin-top:22px;font-size:23px;line-height:1.58">
+      <li>CardPayment (12–19 digits)</li>
+      <li>EWalletPayment (WALLET-*)</li>
+      <li>BankTransferPayment (BANK-*)</li>
+      <li class="hl">CashPayment (front-desk)</li>
+    </ul>
+  </div>
+  <div class="ad-abs ad-callout" style="left:98px;top:705px;width:1046px;padding:36px 56px;border-radius:26px;font-size:34px;line-height:1.32">
+    Tuân thủ trọn vẹn <b>5 nguyên lý S · O · L · I · D</b>: tách bạch khởi tạo (<b>Factory</b>), đa hình thanh toán (<b>Strategy</b>) và vòng đời (<b>State</b>).
+  </div>
+</div>
+</section>
+
+<!-- ===== 10. ui-showcase ===== -->
+<section class="ad-slide ad-slide--sage ad-slide--contour" data-layout="ui-showcase"
+  aria-label="Slide 10: JavaFX 25 Passenger & Seat Map UI"
+  data-pptx-notes="Ở tầng giao diện đồ họa, nhóm hiện thực hóa một ứng dụng Single-Page Application (SPA) trên nền JavaFX 25 lấy cảm hứng từ hệ thống thiết kế Arbitrum. Khi hành khách chọn một chuyến bay, hộp thoại SeatSelectionDialog mô phỏng trực quan khoang máy bay cấu hình 2–Lối đi–2. Người dùng nhìn thấy ngay ghế nào thuộc hạng Thương gia 2.0x có phòng chờ, ghế nào là Economy+ 1.15x rộng chân, ghế nào đã có người giữ hoặc đã bán. Hành khách có thể chọn nhiều ghế cùng lúc, xem tổng tiền tính tự động theo đa hình, và chọn giữ chỗ trả sau hoặc thanh toán ngay.">
+
+<div class="ad-window ad-window--float ad-abs" style="left:71px;top:71px;width:447px;height:800px;padding:48px 28px 32px;background:#f3f4ed">
+  <div style="font-size:21px;color:var(--ad-stone-500);margin:0 0 18px 24px">Arbitrum Aero</div>
+  <div style="display:flex;align-items:center;gap:16px;font-size:26px;font-weight:600;margin:0 0 24px 24px">JavaFX 25 SPA <span class="ad-chip">v6.0</span></div>
+  <ul class="ad-ui-nav">
+    <li>Quick Login (PAX-02)</li>
+    <li class="is-active">Passenger Workspace</li>
+    <li>Seat Map (2–Aisle–2)</li>
+    <li>My Bookings &amp; Retry</li>
+    <li>Admin Operations</li>
+  </ul>
+  <div style="margin:36px 14px 0;padding:22px;border-radius:16px;background:var(--ad-surface);border:1px solid var(--ad-hairline)">
+    <div class="ad-mono" style="font-size:17px;color:var(--ad-muted);margin-bottom:12px">Fare Multipliers</div>
+    <div style="font-size:20px;line-height:1.7;color:var(--ad-ink-soft)">
+      <div>● Business: <b>2.0x</b> (Lounge)</div>
+      <div>● Economy+: <b>1.15x</b> (Row 2)</div>
+      <div>● Economy: <b>1.0x</b> (Standard)</div>
+    </div>
+  </div>
+</div>
+
+<div class="ad-window ad-abs" style="left:477px;top:172px;width:1366px;height:836px">
+  <div style="padding:32px 40px 0">
+    <div class="ad-ui-crumbs">PassengerWorkspaceView &nbsp;/&nbsp; <b>SeatSelectionDialog (VN101)</b></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:26px">
+      <div>
+        <div style="display:flex;align-items:center;gap:18px">
+          <h3 class="ad-ui-title">HAN → SGN · Airbus A320neo</h3>
+          <span class="ad-chip ad-chip--ok">SCHEDULED</span>
+        </div>
+        <div class="ad-ui-meta" style="margin-top:10px">Flight VN101 &nbsp;·&nbsp; Base Fare: 1,200,000 VND &nbsp;·&nbsp; 16 Seats (2–AISLE–2)</div>
+      </div>
+      <span class="ad-btn"><svg style="width:20px;height:20px" viewBox="0 0 24 24" aria-hidden="true"><use href="#ad-i-check"/></svg> Reserve &amp; Pay Now</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:600px 1fr;border-top:1px solid var(--ad-hairline);margin-top:28px;height:608px">
+    <div style="padding:28px 36px;border-right:1px solid var(--ad-hairline)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <span class="ad-mono" style="font-size:21px;font-weight:600">Cabin Layout (2 - AISLE - 2)</span>
+        <span class="ad-chip">Click to select</span>
+      </div>
+      <div class="seat-grid">
+        <span class="seat-row-lbl">R1 Biz</span>
+        <div class="seat-btn seat-btn--occ">1A</div><div class="seat-btn seat-btn--sel">1B</div>
+        <span class="seat-aisle">|</span>
+        <div class="seat-btn seat-btn--biz">1C</div><div class="seat-btn seat-btn--biz">1D</div>
+
+        <span class="seat-row-lbl">R2 Eco+</span>
+        <div class="seat-btn seat-btn--sel">2A</div><div class="seat-btn seat-btn--res">2B</div>
+        <span class="seat-aisle">|</span>
+        <div class="seat-btn seat-btn--plus">2C</div><div class="seat-btn seat-btn--plus">2D</div>
+
+        <span class="seat-row-lbl">R3 Eco</span>
+        <div class="seat-btn">3A</div><div class="seat-btn">3B</div>
+        <span class="seat-aisle">|</span>
+        <div class="seat-btn seat-btn--occ">3C</div><div class="seat-btn">3D</div>
+
+        <span class="seat-row-lbl">R4 Eco</span>
+        <div class="seat-btn">4A</div><div class="seat-btn">4B</div>
+        <span class="seat-aisle">|</span>
+        <div class="seat-btn">4C</div><div class="seat-btn">4D</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:26px;font-size:17px;color:var(--ad-muted)">
+        <span class="ad-chip" style="background:var(--ad-clay);color:#fff">Selected</span>
+        <span class="ad-chip" style="background:var(--ad-lavender);color:var(--ad-ink)">Business 2.0x</span>
+        <span class="ad-chip" style="background:var(--ad-sage);color:var(--ad-ink)">Economy+ 1.15x</span>
+        <span class="ad-chip" style="background:var(--ad-clay-tint);color:var(--ad-ink-soft)">Reserved</span>
+        <span class="ad-chip" style="background:var(--ad-stone-300);color:var(--ad-ink-soft)">Occupied</span>
+      </div>
+    </div>
+
+    <div style="padding:28px 38px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="ad-mono" style="font-size:24px">Booking Summary · PAX-02</div>
+          <div class="ad-ui-meta" style="margin-top:6px">Selected: 2 seats · Polymorphic calculation</div>
+        </div>
+        <span class="ad-btn ad-btn--ghost">Hold Seats</span>
+      </div>
+      <pre class="ad-mono" style="font-size:20px;line-height:1.95;margin:26px 0 0;border-top:1px solid var(--ad-hairline);padding-top:22px;white-space:pre">- Seat 1B (Business · 2.0x) : 2,400,000 VND
+- Seat 2A (Economy+ · 1.15x): 1,380,000 VND
+<span style="color:var(--ad-clay);font-weight:700">- Total Amount              : 3,780,000 VND</span>
+- Initial State             : PENDING (RESERVED)
+- Payment Modes             : Card, Wallet, Bank, Cash</pre>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== 11. ui-demo-blue ===== -->
+<section class="ad-slide ad-slide--blue ad-slide--contour" data-layout="ui-demo-blue"
+  aria-label="Slide 11: Admin Operations & 4-Step Live Demo"
+  data-pptx-notes="Phía quản trị viên (AdminWorkspaceView) cung cấp bảng điều khiển vận hành với 4 chỉ số KPI doanh thu và lưu lượng theo thời gian thực, cùng cơ chế khóa nút thông minh chỉ mở những bước chuyển trạng thái hợp lệ. Ngay sau đây, nhóm sẽ thực hiện Live Demo 4 bước ngay trên ứng dụng đang chạy: từ đăng nhập nhanh bằng chip mẫu, chọn ghế đa hạng, mô phỏng lỗi thanh toán rồi thanh toán lại và check-in, cho đến màn hình Admin kích hoạt hạ cánh và hủy chuyến để chứng minh hiệu ứng dây chuyền hoàn tiền tự động.">
+
+<div class="ad-window ad-abs" style="left:499px;top:71px;width:1330px;height:936px;background:#d6d8d2;box-shadow:var(--ad-shadow-window)">
+  <div style="padding:48px 50px 0 340px;color:var(--ad-ink-soft)">
+    <h3 class="ad-ui-title" style="font-size:36px">Admin Operations</h3>
+    <p style="font-size:22px;margin:10px 0 24px;max-width:480px">4 KPI &amp; điều phối chuyến bay</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px">
+      <div style="background:var(--ad-surface-raised);border-radius:12px;padding:14px 16px"><div class="ad-mono" style="font-size:15px;color:var(--ad-muted)">Flights</div><div style="font-size:28px;font-weight:700;margin-top:4px">4</div></div>
+      <div style="background:var(--ad-surface-raised);border-radius:12px;padding:14px 16px"><div class="ad-mono" style="font-size:15px;color:var(--ad-muted)">Bookings</div><div style="font-size:28px;font-weight:700;margin-top:4px">3</div></div>
+      <div style="background:var(--ad-surface-raised);border-radius:12px;padding:14px 16px"><div class="ad-mono" style="font-size:15px;color:var(--ad-muted)">Passengers</div><div style="font-size:28px;font-weight:700;margin-top:4px">2</div></div>
+      <div style="background:var(--ad-surface-raised);border-radius:12px;padding:14px 16px"><div class="ad-mono" style="font-size:15px;color:var(--ad-muted)">Revenue</div><div style="font-size:28px;font-weight:700;margin-top:4px;color:var(--ad-clay)">6.18M</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:160px 180px 180px 1fr;font-size:18px;color:var(--ad-muted);padding:10px 0">
+      <span>Flight</span><span>Route</span><span>Status</span><span>Smart Actions</span>
+    </div>
+    <div style="font-size:21px">
+      <div style="display:grid;grid-template-columns:160px 180px 180px 1fr;align-items:center;padding:20px 0;border-top:1px solid rgba(27,27,25,.1)"><span class="ad-mono">VN101</span><span>HAN → SGN</span><span class="ad-chip ad-chip--info" style="justify-self:start">SCHEDULED</span><span class="ad-mono" style="font-size:17px">[Boarding] [Cancel]</span></div>
+      <div style="display:grid;grid-template-columns:160px 180px 180px 1fr;align-items:center;padding:20px 0;border-top:1px solid rgba(27,27,25,.1)"><span class="ad-mono">VN102</span><span>SGN → HAN</span><span class="ad-chip ad-chip--ok" style="justify-self:start">BOARDING</span><span class="ad-mono" style="font-size:17px">[Departed] [Cancel]</span></div>
+      <div style="display:grid;grid-template-columns:160px 180px 180px 1fr;align-items:center;padding:20px 0;border-top:1px solid rgba(27,27,25,.1)"><span class="ad-mono">VN103</span><span>HAN → DAD</span><span class="ad-chip ad-chip--info" style="justify-self:start">SCHEDULED</span><span class="ad-mono" style="font-size:17px">[Boarding] [Cancel]</span></div>
+      <div style="display:grid;grid-template-columns:160px 180px 180px 1fr;align-items:center;padding:20px 0;border-top:1px solid rgba(27,27,25,.1)"><span class="ad-mono">VN205</span><span>SGN → DAD</span><span class="ad-chip" style="justify-self:start">ARRIVED</span><span class="ad-mono" style="font-size:17px;color:var(--ad-muted)">Terminal State</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="ad-toast ad-abs" style="left:1375px;top:116px">Cascade: Refunded &amp; Released</div>
+
+<div class="ad-window ad-window--float ad-abs" style="left:92px;top:188px;width:650px;height:800px;padding:38px 36px;background:#f6f9f6">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:28px;font-weight:600">Kịch bản Live Demo 4 bước</div>
+    <span class="ad-chip">Live App</span>
+  </div>
+  <div class="ad-mono" style="font-size:18px;color:var(--ad-muted);margin:10px 0 22px">.\mvnw.cmd javafx:run</div>
+
+  <div style="display:grid;gap:14px">
+    <div style="border:1px solid var(--ad-hairline);border-radius:14px;background:var(--ad-surface);padding:16px 20px">
+      <div style="font-size:21px;font-weight:600">1. Quick Login &amp; Register</div>
+      <div style="font-size:19px;color:var(--ad-muted);margin-top:4px">Double-click chip PAX-02 hoặc đăng ký mới PAX-03.</div>
+    </div>
+    <div style="border:1px solid var(--ad-hairline);border-radius:14px;background:var(--ad-surface);padding:16px 20px">
+      <div style="font-size:21px;font-weight:600">2. Seat Map &amp; Hold PENDING</div>
+      <div style="font-size:19px;color:var(--ad-muted);margin-top:4px">Chọn ghế 1B (Business) + 2A (Economy+) trên VN101.</div>
+    </div>
+    <div style="border:1px solid var(--ad-hairline);border-radius:14px;background:var(--ad-surface);padding:16px 20px">
+      <div style="font-size:21px;font-weight:600">3. Payment Retry &amp; Check-in</div>
+      <div style="font-size:19px;color:var(--ad-muted);margin-top:4px">Bật Simulate Failure → Retry thành công → Check In.</div>
+    </div>
+    <div style="border:1px solid var(--ad-hairline);border-radius:14px;background:var(--ad-surface);padding:16px 20px">
+      <div style="font-size:21px;font-weight:600">4. Admin Cascade (ADM-01)</div>
+      <div style="font-size:19px;color:var(--ad-muted);margin-top:4px">Hạ cánh VN101 (COMPLETED) · Hủy VN103 (REFUNDED).</div>
+    </div>
+  </div>
+  <span class="ad-btn ad-abs" style="right:36px;bottom:28px">Launch Live Demo</span>
+</div>
+</section>
+
+<!-- ===== 12. big-number (derived layout per DESIGN.md §11 & §15) ===== -->
+<section class="ad-slide" data-layout="big-number"
+  aria-label="Slide 12: 85 JUnit 5 Automated Tests"
+  data-pptx-notes="Để chứng minh chất lượng mã nguồn ở tiêu chí số 9, nhóm áp dụng phương pháp phát triển hướng kiểm thử (TDD) với JUnit 5. Từ 52 bài test ở Milestone 4, bộ kiểm thử hiện tại đã đạt 85 bài kiểm thử tự động trải đều trên 18 lớp test với tỷ lệ vượt qua 100%. Không chỉ kiểm thử các thực thể miền và các ca biên bằng assertThrows, nhóm còn viết 20 bài kiểm thử cho toàn bộ luồng điều khiển giao diện ReservationGuiControllerTest và dùng chính CssParser của JavaFX trong ArbitrumThemeTest để đảm bảo bảng kiểu giao diện không có bất kỳ lỗi cú pháp hay cảnh báo nào.">
+<h2 class="ad-title">85 bài kiểm thử JUnit 5 bảo vệ hệ thống</h2>
+<div class="ad-stagepanel ad-stagepanel--sage ad-stagepanel--contour" style="left:90px;top:265px;width:560px;height:720px;padding:52px 46px;display:flex;flex-direction:column;justify-content:space-between">
+  <div><span class="ad-tag ad-tag--clay">100% PASSING</span></div>
+  <p class="ad-bignum">85</p>
+  <div>
+    <div class="ad-serif" style="font-size:38px;line-height:1.18;font-weight:500">Unit &amp; Integration Tests</div>
+    <div class="ad-mono" style="font-size:21px;color:var(--ad-ink-soft);margin-top:12px">18 Classes · 0 Failures · Java 25</div>
+  </div>
+</div>
+
+<div class="ad-abs" style="left:690px;top:265px;width:1140px;display:grid;gap:24px">
+  <div class="ad-row" style="height:162px">
+    <div class="ad-itile ad-itile--sage ad-itile--sm"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-layers"/></svg></div>
+    <div>
+      <div class="ad-row__t">FlightTest · BookingTest · SeatTest · SeatFactoryTest · PaymentTest</div>
+      <div class="ad-row__h">Domain Entities &amp; Polymorphism</div>
+    </div>
+    <span class="ad-tag ad-row__tag" style="white-space:nowrap;flex:none">32 tests</span>
+  </div>
+  <div class="ad-row" style="height:162px">
+    <div class="ad-itile ad-itile--lav ad-itile--sm"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-cycle"/></svg></div>
+    <div>
+      <div class="ad-row__t">6 AirlineReservationSystem*Test · DemoDataSeederTest</div>
+      <div class="ad-row__h">System Orchestration &amp; Cascades</div>
+    </div>
+    <span class="ad-tag ad-row__tag" style="white-space:nowrap;flex:none">22 tests</span>
+  </div>
+  <div class="ad-row" style="height:162px">
+    <div class="ad-itile ad-itile--peach ad-itile--sm"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-shield"/></svg></div>
+    <div>
+      <div class="ad-row__t">PaymentStrategyTest · PaymentFactoryTest · DomainExceptionTest</div>
+      <div class="ad-row__h">Strategies &amp; 6 Unchecked Exceptions</div>
+    </div>
+    <span class="ad-tag ad-row__tag" style="white-space:nowrap;flex:none">7 tests</span>
+  </div>
+  <div class="ad-row" style="height:162px">
+    <div class="ad-itile ad-itile--stone ad-itile--sm"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-window"/></svg></div>
+    <div>
+      <div class="ad-row__t">ReservationGuiControllerTest · ArbitrumThemeTest · MainTest</div>
+      <div class="ad-row__h">Headless GUI Controller &amp; CSS Parser</div>
+    </div>
+    <span class="ad-tag ad-tag--clay ad-row__tag" style="white-space:nowrap;flex:none">24 tests</span>
+  </div>
+</div>
+</section>
+
+<!-- ===== 13. pill-stack ===== -->
+<section class="ad-slide" data-layout="pill-stack"
+  aria-label="Slide 13: 10 Evaluation Criteria Summary"
+  data-pptx-notes="Tóm lại, đối chiếu với thang điểm 100 và 10 tiêu chí đánh giá của môn Lập trình Hướng đối tượng, dự án Airline Reservation System của Nhóm 4 đã đáp ứng đầy đủ và có bằng chứng mã nguồn cụ thể cho từng hạng mục: từ thiết kế UML, đóng gói, kế thừa, đa hình, Collections, ngoại lệ, cho tới 3 mẫu thiết kế kinh điển, 6 tài liệu quyết định kiến trúc (ADR) và 85 bài kiểm thử tự động.">
+<h2 class="ad-title ad-title--center">Đáp ứng trọn vẹn 10 tiêu chí đánh giá</h2>
+<div class="ad-abs" style="left:90px;top:300px;width:562px">
+  <div class="ad-pills">
+    <div class="ad-pill" style="font-size:32px;padding:28px 26px"><b>40 / 40đ · Thiết kế OOP</b>Bài toán, UML 38 types, Đóng gói &amp; Composition</div>
+    <div class="ad-pill" style="font-size:32px;padding:28px 26px"><b>40 / 40đ · Đa hình &amp; SOLID</b>Kế thừa, Collections, Ngoại lệ &amp; 3 Patterns</div>
+    <div class="ad-pill" style="font-size:32px;padding:28px 26px"><b>20 / 20đ · Kiểm thử &amp; Demo</b>85 JUnit 5 Tests &amp; JavaFX 25 Passive View</div>
+  </div>
+</div>
+
+<div class="ad-abs ad-media ad-media--contour" style="left:700px;top:250px;width:1130px;height:740px;border-radius:28px">
+  <div class="ad-window ad-abs" style="left:42px;top:42px;width:1046px;height:656px;padding:26px 34px;border-radius:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--ad-hairline)">
+      <div>
+        <div style="font-size:27px;font-weight:600">Đối chiếu 10 Tiêu chí (Introduction.pdf · tr. 13)</div>
+        <div class="ad-mono" style="font-size:17px;color:var(--ad-muted);margin-top:4px">Bằng chứng từ mã nguồn, ADR-0001..0006 &amp; JUnit 5</div>
+      </div>
+      <span class="ad-chip ad-chip--ok" style="font-size:20px;padding:10px 18px">100 / 100 điểm</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-top:18px;font-size:20px;line-height:1.3">
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>1. Problem analysis</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · Passenger / Admin / Rules</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>6. Interfaces</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · PaymentStrategy, State</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>2. UML modeling</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · 38 types ClassDiagram</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>7. Collections &amp; Exc</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · LinkedHashMap, ADR-0003</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>3. Encapsulation</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · private + List.copyOf</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>8. SOLID &amp; Patterns</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · State, Strategy, Factory</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>4. Composition</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · ADR-0001 Flight–Seat</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>9. Quality &amp; Tests</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · 85 JUnit 5 (100% pass)</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>5. Polymorphism</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · Person &amp; Seat 2.0x / 1.15x</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>10. Demo &amp; UI</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · JavaFX 25 + 4-step demo</div></div>
+    </div>
+    <div class="ad-mono" style="margin-top:18px;font-size:18px;color:var(--ad-ink-soft)">&gt; .\mvnw.cmd test &nbsp;&nbsp;|&nbsp;&nbsp; &gt; .\mvnw.cmd javafx:run &nbsp;&nbsp;|&nbsp;&nbsp; &gt; .\mvnw.cmd exec:java</div>
+  </div>
+</div>
+</section>
+
+<!-- ===== 14. thanks ===== -->
+<section class="ad-slide ad-slide--sage" data-layout="thanks"
+  aria-label="Slide 14: Thank you"
+  data-pptx-notes="Cảm ơn thầy và các bạn đã lắng nghe phần trình bày của Nhóm 4. Nhóm rất mong nhận được các câu hỏi, nhận xét và góp ý từ thầy và các bạn!">
+<div class="ad-thanks__wrap">
+  <svg class="ad-thanks__mark" viewBox="0 0 100 70" aria-hidden="true">
+    <g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 14 C16 8 24 7 29 11 C33 15 31 24 24 25 C17 26 14 20 16 14 Z"/>
+      <path d="M69 12 C72 7 80 7 84 12 C87 17 83 25 76 25 C69 25 66 18 69 12 Z"/>
+      <path d="M55 4 L47 28" stroke="#d77f60"/>
+      <path d="M12 46 C28 66 72 66 88 46"/>
+    </g>
+  </svg>
+  <h2 class="ad-thanks__title">Thank you</h2>
+</div>
+</section>
+
+</div></main>
+<div class="hud" id="hud"></div>
+<script>
+/* Fixed 1920x1080 stage, scaled to fit. Keys: ← → PageUp PageDown Space Home End, F = fullscreen */
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.ad-slide')), stage=document.getElementById('stage'), hud=document.getElementById('hud'), i=0;
+  function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform='scale('+s+')';}
+  function show(n){i=Math.max(0,Math.min(slides.length-1,n));slides.forEach(function(el,k){el.classList.toggle('is-active',k===i)});hud.textContent=(i+1)+' / '+slides.length+'  ·  '+slides[i].dataset.layout;history.replaceState(null,'','#'+(i+1));}
+  addEventListener('resize',fit);fit();
+  addEventListener('keydown',function(e){var k=e.key;
+    if(k==='ArrowRight'||k==='PageDown'||k===' ')show(i+1);else if(k==='ArrowLeft'||k==='PageUp')show(i-1);
+    else if(k==='Home')show(0);else if(k==='End')show(slides.length-1);
+    else if(k==='f'||k==='F')document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();});
+  addEventListener('click',function(e){show(e.clientX>innerWidth/2?i+1:i-1)});
+  show((parseInt(location.hash.slice(1))||1)-1);
+})();
+</script>
+</body>
+</html>
