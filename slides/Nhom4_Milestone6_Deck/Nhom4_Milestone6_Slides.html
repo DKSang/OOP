@@ -92,35 +92,36 @@
 <!-- ===== 2. timeline ===== -->
 <section class="ad-slide" data-layout="timeline"
   aria-label="Slide 2: 6 Milestones"
-  data-pptx-notes="Để xây dựng một hệ thống vừa chặt chẽ về nghiệp vụ vừa dễ mở rộng, nhóm không viết code ngay từ đầu mà phát triển tuần tự qua 6 cột mốc. Từ phân tích yêu cầu ở Milestone 1–2, thiết kế sơ đồ lớp UML ở Milestone 3, hiện thực hóa lõi Java 25 với 52 unit test ở Milestone 4, cho đến bước nhảy vọt ở Milestone 5 và 6: áp dụng 3 mẫu thiết kế kinh điển (State, Strategy, Factory), xây dựng giao diện đồ họa JavaFX 25 theo chuẩn Passive View và nâng tổng số bài kiểm thử tự động lên 85 bài.">
+  data-pptx-notes="Để xây dựng một hệ thống vừa chặt chẽ về nghiệp vụ vừa dễ mở rộng, nhóm không viết code ngay từ đầu mà phát triển tuần tự qua 6 cột mốc: M1 phân tích bài toán và ca sử dụng, M2 xác định 11 lớp miền cốt lõi, M3 thiết kế UML với quyết định Composition Flight–Seat (ADR-0001), M4 hiện thực hóa lõi Java 25 cùng 52 unit test, M5 tái cấu trúc theo SOLID với State, Strategy và Factory, và M6 hôm nay là sản phẩm hoàn thiện với giao diện JavaFX 25 SPA cùng 85 bài kiểm thử JUnit 5.">
 <h2 class="ad-title">Hành trình phát triển qua sáu cột mốc</h2>
 <div class="ad-abs" style="inset:0">
 <div class="ad-tl__axis"></div>
-<div class="ad-tl__stem" style="left:220px;top:336px;height:114px"></div>
-<div class="ad-tl__stem" style="left:515px;top:336px;height:389px"></div>
+<div class="ad-tl__stem" style="left:225px;top:336px;height:74px"></div>
+<div class="ad-tl__stem" style="left:520px;top:336px;height:364px"></div>
 <div class="ad-tl__stem" style="left:815px;top:336px;height:74px"></div>
-<div class="ad-tl__stem" style="left:1125px;top:336px;height:374px"></div>
-<div class="ad-tl__stem" style="left:1430px;top:336px;height:54px"></div>
-<div class="ad-tl__item" style="left:220px"><div class="ad-tl__label">M1 · Problem</div><div class="ad-tl__dot"></div></div>
-<div class="ad-tl__item" style="left:515px"><div class="ad-tl__label">M2 · Analysis</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__stem" style="left:1110px;top:336px;height:364px"></div>
+<div class="ad-tl__stem" style="left:1405px;top:336px;height:74px"></div>
+<div class="ad-tl__stem" style="left:1700px;top:336px;height:364px"></div>
+<div class="ad-tl__item" style="left:225px"><div class="ad-tl__label">M1 · Problem</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:520px"><div class="ad-tl__label">M2 · Analysis</div><div class="ad-tl__dot"></div></div>
 <div class="ad-tl__item" style="left:815px"><div class="ad-tl__label">M3 · UML</div><div class="ad-tl__dot"></div></div>
-<div class="ad-tl__item" style="left:1125px"><div class="ad-tl__label">M4 · Java 25</div><div class="ad-tl__dot"></div></div>
-<div class="ad-tl__item" style="left:1430px"><div class="ad-tl__label">M5 · Patterns</div><div class="ad-tl__dot"></div></div>
-<div class="ad-tl__item" style="left:1745px"><div class="ad-tl__label">TODAY</div><div class="ad-tl__dot ad-tl__dot--today"></div></div>
+<div class="ad-tl__item" style="left:1110px"><div class="ad-tl__label">M4 · Java 25</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:1405px"><div class="ad-tl__label">M5 · Patterns</div><div class="ad-tl__dot"></div></div>
+<div class="ad-tl__item" style="left:1700px"><div class="ad-tl__label">TODAY</div><div class="ad-tl__dot ad-tl__dot--today"></div></div>
 
-<div class="ad-window" style="position:absolute;left:80px;top:450px;width:340px;height:230px;padding:22px 24px;border-radius:18px">
-  <div class="ad-mono" style="font-size:17px;color:var(--ad-clay)">M1–M2 · Domain CRC</div>
+<div class="ad-window" style="position:absolute;left:90px;top:410px;width:335px;height:235px;padding:22px 24px;border-radius:18px">
+  <div class="ad-mono" style="font-size:17px;color:var(--ad-clay)">M1 · Problem Analysis</div>
+  <div class="ad-serif" style="font-size:28px;margin-top:10px;font-weight:500">Requirements &amp; Cases</div>
+  <div class="ad-mono" style="font-size:17px;line-height:1.5;margin-top:10px;color:var(--ad-muted)">Passenger: Search · Book<br>Admin: Fleet · Lifecycle<br>Rule: No Double-Booking</div>
+</div>
+
+<div class="ad-window" style="position:absolute;left:330px;top:700px;width:380px;height:255px;padding:22px 24px;border-radius:18px">
+  <div class="ad-mono" style="font-size:17px;color:var(--ad-clay)">M2 · OO Analysis (CRC)</div>
   <div class="ad-serif" style="font-size:30px;margin-top:10px;font-weight:500">11 core classes</div>
-  <div class="ad-mono" style="font-size:17px;line-height:1.5;margin-top:10px;color:var(--ad-muted)">Passenger &amp; Admin<br>Flight · Seat · Booking<br>Airport · Aircraft</div>
+  <div class="ad-mono" style="font-size:17px;line-height:1.55;margin-top:12px;color:var(--ad-muted)">Passenger &amp; Admin<br>Flight · Seat · Booking<br>Airport · Aircraft · Payment</div>
 </div>
 
-<div style="position:absolute;left:365px;top:725px;width:375px;height:255px;background:#262624;border-radius:14px;padding:18px 22px;color:#eeeee5;box-shadow:var(--ad-shadow-float)">
-  <div style="display:flex;gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i></div>
-  <div class="ad-mono" style="font-size:17px;margin-top:16px;border:1px solid #55564d;border-radius:6px;padding:7px 12px"><span class="ad-clay">&gt;</span> mvnw test (M4)</div>
-  <div class="ad-mono ad-clay" style="font-size:56px;line-height:1.05;margin-top:26px;letter-spacing:.02em;font-weight:700">52<br>TESTS</div>
-</div>
-
-<div style="position:absolute;left:615px;top:410px;width:415px;height:195px;background:var(--ad-clay);border-radius:30px;padding:24px 30px;color:#fff">
+<div style="position:absolute;left:615px;top:410px;width:400px;height:205px;background:var(--ad-clay);border-radius:30px;padding:24px 28px;color:#fff">
   <div class="ad-serif" style="font-size:32px;text-align:center;font-weight:500">M3 · ADR-0001 UML</div>
   <div style="display:flex;gap:14px;justify-content:center;margin-top:24px">
     <div style="width:74px;height:74px;border-radius:16px;background:var(--ad-paper);color:var(--ad-ink);display:grid;place-items:center"><svg style="width:42px;height:42px" viewBox="0 0 64 64" aria-hidden="true"><use href="#ad-i-layers"/></svg></div>
@@ -130,22 +131,28 @@
   </div>
 </div>
 
-<div class="ad-window" style="position:absolute;left:935px;top:710px;width:455px;height:280px;padding:22px 24px;border-radius:16px;background:var(--ad-status-info-bg)">
-  <div class="ad-mono" style="font-size:18px;color:var(--ad-status-info-fg)">M5 · SOLID &amp; Patterns</div>
-  <div style="background:var(--ad-surface-raised);border:1px solid var(--ad-hairline);border-radius:12px;padding:12px 16px;margin-top:12px">
-    <div style="font-size:20px;color:var(--ad-status-info-fg);font-weight:600">State &amp; Strategy</div>
-    <div class="ad-mono" style="font-size:16px;margin-top:4px;color:var(--ad-ink-soft)">BookingState (5) · PaymentStrategy (4)</div>
+<div style="position:absolute;left:920px;top:700px;width:380px;height:255px;background:#262624;border-radius:14px;padding:18px 22px;color:#eeeee5;box-shadow:var(--ad-shadow-float)">
+  <div style="display:flex;gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i><i style="width:9px;height:9px;border-radius:50%;background:#6e6f66"></i></div>
+  <div class="ad-mono" style="font-size:17px;margin-top:16px;border:1px solid #55564d;border-radius:6px;padding:7px 12px"><span class="ad-clay">&gt;</span> mvnw test (M4)</div>
+  <div class="ad-mono ad-clay" style="font-size:56px;line-height:1.05;margin-top:24px;letter-spacing:.02em;font-weight:700">52<br>TESTS</div>
+</div>
+
+<div class="ad-window" style="position:absolute;left:1200px;top:410px;width:415px;height:250px;padding:18px 20px;border-radius:16px;background:var(--ad-status-info-bg)">
+  <div class="ad-mono" style="font-size:17px;color:var(--ad-status-info-fg)">M5 · SOLID &amp; Patterns</div>
+  <div style="background:var(--ad-surface-raised);border:1px solid var(--ad-hairline);border-radius:12px;padding:10px 14px;margin-top:10px">
+    <div style="font-size:19px;color:var(--ad-status-info-fg);font-weight:600">State &amp; Strategy</div>
+    <div class="ad-mono" style="font-size:15px;margin-top:4px;color:var(--ad-ink-soft)">BookingState (5) · PaymentStrategy (4)</div>
   </div>
-  <div style="background:var(--ad-surface);border:1px solid var(--ad-hairline);border-radius:12px;padding:12px 16px;margin-top:10px">
-    <div style="font-size:20px;color:var(--ad-status-info-fg);font-weight:600">Factory Pattern</div>
-    <div class="ad-mono" style="font-size:16px;margin-top:4px;color:var(--ad-ink-soft)">SeatFactory · PaymentFactory</div>
+  <div style="background:var(--ad-surface);border:1px solid var(--ad-hairline);border-radius:12px;padding:10px 14px;margin-top:10px">
+    <div style="font-size:19px;color:var(--ad-status-info-fg);font-weight:600">Factory Pattern</div>
+    <div class="ad-mono" style="font-size:15px;margin-top:4px;color:var(--ad-ink-soft)">SeatFactory · PaymentFactory</div>
   </div>
 </div>
 
-<div class="ad-window" style="position:absolute;left:1315px;top:390px;width:515px;height:260px;padding:24px 28px;border-radius:18px;background:var(--ad-sage)">
-  <div class="ad-mono" style="font-size:18px;color:var(--ad-ink-soft)">M6 · Final Product (TODAY)</div>
-  <div class="ad-serif" style="font-size:34px;font-weight:500;margin-top:10px">JavaFX 25 SPA &amp; 85 Tests</div>
-  <div class="ad-mono" style="font-size:18px;line-height:1.55;margin-top:14px;color:var(--ad-ink-soft)">Passive View MVC (ADR-0005/0006)<br>SeatSelectionDialog (2-AISLE-2)<br>85 JUnit 5 Tests · 0 Failures</div>
+<div class="ad-window" style="position:absolute;left:1390px;top:700px;width:440px;height:255px;padding:22px 26px;border-radius:18px;background:var(--ad-sage)">
+  <div class="ad-mono" style="font-size:17px;color:var(--ad-ink-soft)">M6 · Final Product (TODAY)</div>
+  <div class="ad-serif" style="font-size:32px;font-weight:500;margin-top:8px">JavaFX 25 SPA &amp; 85 Tests</div>
+  <div class="ad-mono" style="font-size:17px;line-height:1.5;margin-top:12px;color:var(--ad-ink-soft)">Passive View MVC (ADR-0005/0006)<br>SeatSelectionDialog (2-AISLE-2)<br>85 JUnit 5 Tests · 0 Failures</div>
 </div>
 </div>
 </section>
@@ -623,14 +630,14 @@
 
 <!-- ===== 13. pill-stack ===== -->
 <section class="ad-slide" data-layout="pill-stack"
-  aria-label="Slide 13: 10 Evaluation Criteria Summary"
-  data-pptx-notes="Tóm lại, đối chiếu với thang điểm 100 và 10 tiêu chí đánh giá của môn Lập trình Hướng đối tượng, dự án Airline Reservation System của Nhóm 4 đã đáp ứng đầy đủ và có bằng chứng mã nguồn cụ thể cho từng hạng mục: từ thiết kế UML, đóng gói, kế thừa, đa hình, Collections, ngoại lệ, cho tới 3 mẫu thiết kế kinh điển, 6 tài liệu quyết định kiến trúc (ADR) và 85 bài kiểm thử tự động.">
-<h2 class="ad-title ad-title--center">Đáp ứng trọn vẹn 10 tiêu chí đánh giá</h2>
-<div class="ad-abs" style="left:90px;top:300px;width:562px">
+  aria-label="Slide 13: Evaluation Criteria Traceability"
+  data-pptx-notes="Trước khi bước vào phần hỏi đáp, Slide 13 tổng hợp bản đồ đối chiếu giữa các thành phần nhóm đã triển khai với 10 tiêu chí tham khảo của học phần để thầy tiện theo dõi và đánh giá: từ phân tích bài toán, UML, đóng gói, đa hình, cấu trúc dữ liệu, các mẫu thiết kế SOLID cho tới bộ 85 bài kiểm thử JUnit 5 và giao diện JavaFX 25 vừa trình diễn. Toàn bộ mã nguồn, 6 tài liệu ADR và bộ test đều có thể chạy kiểm chứng trực tiếp qua Maven; nhóm rất mong nhận được nhận xét và góp ý của thầy để hoàn thiện thêm.">
+<h2 class="ad-title ad-title--center">Đối chiếu sản phẩm với 10 tiêu chí đề bài</h2>
+<div class="ad-abs" style="left:90px;top:295px;width:562px">
   <div class="ad-pills">
-    <div class="ad-pill" style="font-size:32px;padding:28px 26px"><b>40 / 40đ · Thiết kế OOP</b>Bài toán, UML 38 types, Đóng gói &amp; Composition</div>
-    <div class="ad-pill" style="font-size:32px;padding:28px 26px"><b>40 / 40đ · Đa hình &amp; SOLID</b>Kế thừa, Collections, Ngoại lệ &amp; 3 Patterns</div>
-    <div class="ad-pill" style="font-size:32px;padding:28px 26px"><b>20 / 20đ · Kiểm thử &amp; Demo</b>85 JUnit 5 Tests &amp; JavaFX 25 Passive View</div>
+    <div class="ad-pill" style="font-size:29px;padding:26px 26px"><b>Nhóm 1 · Thiết kế OOP (TC 1–4)</b>Bài toán, UML 38 types, Đóng gói &amp; Composition</div>
+    <div class="ad-pill" style="font-size:29px;padding:26px 26px"><b>Nhóm 2 · Đa hình &amp; SOLID (TC 5–8)</b>Kế thừa, Collections, Ngoại lệ &amp; 3 Patterns</div>
+    <div class="ad-pill" style="font-size:29px;padding:26px 26px"><b>Nhóm 3 · Kiểm thử &amp; Demo (TC 9–10)</b>85 JUnit 5 Tests &amp; JavaFX 25 Passive View</div>
   </div>
 </div>
 
@@ -638,24 +645,24 @@
   <div class="ad-window ad-abs" style="left:42px;top:42px;width:1046px;height:656px;padding:26px 34px;border-radius:22px">
     <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--ad-hairline)">
       <div>
-        <div style="font-size:27px;font-weight:600">Đối chiếu 10 Tiêu chí (Introduction.pdf · tr. 13)</div>
-        <div class="ad-mono" style="font-size:17px;color:var(--ad-muted);margin-top:4px">Bằng chứng từ mã nguồn, ADR-0001..0006 &amp; JUnit 5</div>
+        <div style="font-size:27px;font-weight:600">Bản đồ minh chứng trong dự án (tr. 13)</div>
+        <div class="ad-mono" style="font-size:17px;color:var(--ad-muted);margin-top:4px">Vị trí mã nguồn, ADR-0001..0006 &amp; JUnit 5 để kiểm chứng</div>
       </div>
-      <span class="ad-chip ad-chip--ok" style="font-size:20px;padding:10px 18px">100 / 100 điểm</span>
+      <span class="ad-chip ad-chip--info" style="font-size:20px;padding:10px 18px">10 hạng mục đối chiếu</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-top:18px;font-size:20px;line-height:1.3">
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>1. Problem analysis</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · Passenger / Admin / Rules</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>6. Interfaces</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · PaymentStrategy, State</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>2. UML modeling</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · 38 types ClassDiagram</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>7. Collections &amp; Exc</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · LinkedHashMap, ADR-0003</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>3. Encapsulation</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · private + List.copyOf</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>8. SOLID &amp; Patterns</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · State, Strategy, Factory</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>4. Composition</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · ADR-0001 Flight–Seat</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>9. Quality &amp; Tests</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · 85 JUnit 5 (100% pass)</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>5. Polymorphism</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · Person &amp; Seat 2.0x / 1.15x</div></div>
-      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>10. Demo &amp; UI</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">10đ · JavaFX 25 + 4-step demo</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>1. Problem analysis</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 2–3 · Passenger / Admin / Rules</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>6. Interfaces</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 6, 8–9 · PaymentStrategy, State</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>2. UML modeling</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 4 · 38 types ClassDiagram</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>7. Collections &amp; Exc</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 7 · LinkedHashMap, ADR-0003</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>3. Encapsulation</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 5 · private + List.copyOf</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>8. SOLID &amp; Patterns</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 8–9 · State, Strategy, Factory</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>4. Composition</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 5 · ADR-0001 Flight–Seat</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>9. Quality &amp; Tests</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 12 · 85 JUnit 5 (0 Failures)</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>5. Polymorphism</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 6 · Person &amp; Seat 2.0x / 1.15x</div></div>
+      <div style="padding:10px 14px;border-radius:10px;background:var(--ad-surface)"><b>10. Demo &amp; UI</b><div class="ad-mono" style="font-size:16px;color:var(--ad-muted);margin-top:3px">Slide 10–11 · JavaFX 25 + 4-step demo</div></div>
     </div>
-    <div class="ad-mono" style="margin-top:18px;font-size:18px;color:var(--ad-ink-soft)">&gt; .\mvnw.cmd test &nbsp;&nbsp;|&nbsp;&nbsp; &gt; .\mvnw.cmd javafx:run &nbsp;&nbsp;|&nbsp;&nbsp; &gt; .\mvnw.cmd exec:java</div>
+    <div class="ad-mono" style="margin-top:18px;font-size:18px;color:var(--ad-ink-soft)">&gt; .\mvnw.cmd test &nbsp;|&nbsp; &gt; .\mvnw.cmd javafx:run &nbsp;|&nbsp; Main (Console)</div>
   </div>
 </div>
 </section>

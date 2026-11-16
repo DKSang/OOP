@@ -14,7 +14,7 @@
 
 ---
 
-## Bảng ánh xạ 10 Tiêu chí Chấm điểm (100/100 điểm) vào 14 Slides
+## Bảng ánh xạ 10 Tiêu chí Tham khảo (Thang 100 điểm) vào 14 Slides
 
 | # | Tiêu chí chấm điểm (theo `Introduction.pdf` trang 13) | Điểm | Slide đảm nhiệm | Bằng chứng trong Repo (Code / ADR / Test) |
 | :-: | :--- | :-: | :--- | :--- |
@@ -55,14 +55,14 @@
 - **Layout (`data-layout`):** `timeline` (Trục thời gian ngang với 6 điểm mốc, điểm cuối `M6 · TODAY` nổi bật bằng màu `--ad-clay`)
 - **Title (Serif 84px):** `Hành trình phát triển qua 6 cột mốc`
 - **6 Điểm mốc trên trục (Axis Nodes & Cards):**
-  1. `M1 · Problem`: Đặc tả bài toán đặt vé, phân tích 2 tác nhân `Passenger` & `Admin`
+  1. `M1 · Problem`: Đặc tả bài toán đặt vé, ca sử dụng `Passenger` & `Admin`, quy tắc không đặt trùng ghế
   2. `M2 · OO Analysis`: Xác định 11 thực thể miền cốt lõi và trách nhiệm từng lớp (`CRC`)
   3. `M3 · UML Design`: Chuẩn hóa Class Diagram, quan hệ Composition `Flight–Seat` (`ADR-0001`)
   4. `M4 · Core Java 25`: Hiện thực hóa đa hình, Collections, Unchecked Exceptions & 52 Unit Tests
   5. `M5 · SOLID & Patterns`: Tái cấu trúc với `BookingState`, `PaymentStrategy`, `SeatFactory` & `PaymentFactory`
   6. `M6 · Final Product (TODAY)`: Giao diện **JavaFX 25 SPA**, kiến trúc **Passive View** & **85 JUnit 5 Tests**
 - **Speaker Notes:**
-  > "Để xây dựng một hệ thống vừa chặt chẽ về nghiệp vụ vừa dễ mở rộng, nhóm không viết code ngay từ đầu mà phát triển tuần tự qua 6 cột mốc. Từ phân tích yêu cầu ở Milestone 1–2, thiết kế sơ đồ lớp UML ở Milestone 3, hiện thực hóa lõi Java 25 với 52 unit test ở Milestone 4, cho đến bước nhảy vọt ở Milestone 5 và 6: áp dụng 3 mẫu thiết kế kinh điển (State, Strategy, Factory), xây dựng giao diện đồ họa JavaFX 25 theo chuẩn Passive View và nâng tổng số bài kiểm thử tự động lên 85 bài."
+  > "Để xây dựng một hệ thống vừa chặt chẽ về nghiệp vụ vừa dễ mở rộng, nhóm không viết code ngay từ đầu mà phát triển tuần tự qua 6 cột mốc: M1 phân tích bài toán và ca sử dụng, M2 xác định 11 lớp miền cốt lõi, M3 thiết kế UML với quyết định Composition `Flight–Seat` (`ADR-0001`), M4 hiện thực hóa lõi Java 25 cùng 52 unit test, M5 tái cấu trúc theo SOLID với `BookingState`, `PaymentStrategy` và Factory, và M6 hôm nay là sản phẩm hoàn thiện với giao diện JavaFX 25 SPA cùng 85 bài kiểm thử JUnit 5."
 
 ---
 
@@ -243,18 +243,18 @@
 
 ---
 
-#### Slide 13 — Tổng kết đối chiếu 10 Tiêu chí Đánh giá (100/100 điểm)
-- **Layout (`data-layout`):** `pill-stack` (3 pill tổng kết nhóm điểm kết hợp checklist đối chiếu trực tiếp 10 tiêu chí của học phần trước khi bước vào phần Hỏi – Đáp)
-- **Title (Serif 84px):** `Hoàn thành trọn vẹn 10 tiêu chí đánh giá của học phần`
-- **3 Cột tổng kết:**
-  - **Cột 1 — Phân tích & Mô hình OOP (40đ):**
-    - Đề tài 21 nâng cao rõ ràng; sơ đồ UML chuẩn xác; đóng gói bất biến với `List.copyOf`; quan hệ Composition `Flight–Seat` (`ADR-0001`).
-  - **Cột 2 — Đa hình, Cấu trúc & Mẫu thiết kế (40đ):**
-    - Đa hình `Person`, `Seat`, `PaymentStrategy`; tra cứu $O(1)$ với `LinkedHashMap`; 6 Unchecked Exceptions (`ADR-0003`); 3 Design Patterns **State, Strategy, Factory** tuân thủ **SOLID**.
-  - **Cột 3 — Kiểm thử, Giao diện & Triển khai (20đ):**
-    - Giao diện **JavaFX 25 SPA** theo kiến trúc **Passive View** (`ADR-0005/0006`); kịch bản Console & GUI đồng nhất; **85 bài kiểm thử JUnit 5** xanh 100%.
+#### Slide 13 — Đối chiếu Sản phẩm với 10 Tiêu chí Đề bài
+- **Layout (`data-layout`):** `pill-stack` (3 pill tóm tắt nhóm hạng mục kết hợp bảng bản đồ minh chứng theo 10 tiêu chí tham khảo của học phần để giảng viên tiện kiểm chứng)
+- **Title (Serif 84px):** `Đối chiếu sản phẩm với 10 tiêu chí đề bài`
+- **3 Nhóm hạng mục tổng kết (3 Pill Cards bên trái):**
+  - **Nhóm 1 — Thiết kế & Mô hình OOP (TC 1–4):**
+    - Đề tài 21 nâng cao; sơ đồ UML 38 kiểu; đóng gói bất biến với `List.copyOf`; quan hệ Composition `Flight–Seat` (`ADR-0001`).
+  - **Nhóm 2 — Đa hình, Cấu trúc & SOLID (TC 5–8):**
+    - Đa hình `Person`, `Seat`, `PaymentStrategy`; tra cứu $O(1)$ với `LinkedHashMap`; 6 Unchecked Exceptions (`ADR-0003`); 3 Design Patterns **State, Strategy, Factory** theo **SOLID**.
+  - **Nhóm 3 — Kiểm thử & Trình diễn UI (TC 9–10):**
+    - Giao diện **JavaFX 25 SPA** theo kiến trúc **Passive View** (`ADR-0005/0006`); kịch bản Console & GUI đồng nhất; **85 bài kiểm thử JUnit 5** không lỗi.
 - **Speaker Notes:**
-  > "Tóm lại, đối chiếu với thang điểm 100 và 10 tiêu chí đánh giá của môn Lập trình Hướng đối tượng, dự án Airline Reservation System của Nhóm 4 đã đáp ứng đầy đủ và có bằng chứng mã nguồn cụ thể cho từng hạng mục: từ thiết kế UML, đóng gói, kế thừa, đa hình, Collections, ngoại lệ, cho tới 3 mẫu thiết kế kinh điển, 6 tài liệu quyết định kiến trúc (ADR) và 85 bài kiểm thử tự động."
+  > "Trước khi bước vào phần hỏi đáp, Slide 13 tổng hợp bản đồ đối chiếu giữa các thành phần nhóm đã triển khai với 10 tiêu chí tham khảo của học phần để thầy tiện theo dõi và đánh giá: từ phân tích bài toán, UML, đóng gói, đa hình, cấu trúc dữ liệu, các mẫu thiết kế SOLID cho tới bộ 85 bài kiểm thử JUnit 5 và giao diện JavaFX 25 vừa trình diễn. Toàn bộ mã nguồn, 6 tài liệu ADR và bộ test đều có thể chạy kiểm chứng trực tiếp qua Maven; nhóm rất mong nhận được nhận xét và góp ý của thầy để hoàn thiện thêm."
 
 ---
 
